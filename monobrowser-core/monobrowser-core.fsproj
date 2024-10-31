@@ -1,0 +1,48 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Title>MonoBrowser Core</Title>
+    <Authors>Yury Romanov</Authors>
+    <Description>Render engine for MonoGame</Description>
+    <Copyright>2024 Yury Romanov</Copyright>
+    <PackageProjectUrl>https://github.com/romanov/monobrowser</PackageProjectUrl>
+    <Product>monobrowser-core</Product>
+    <AssemblyVersion>1</AssemblyVersion>
+    <AssemblyName>monobrowser-core</AssemblyName>
+    <RootNamespace>org.monobrowser.core </RootNamespace>
+  </PropertyGroup>
+  
+  <PropertyGroup>
+    <PreserveCompilationReferences>true</PreserveCompilationReferences>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Helpers\RandomHelp.fs" />
+    <Compile Include="Helpers\ColorHelper.fs" />
+    <Compile Include="Helpers\DataValidation.fs" />
+    <Compile Include="Helpers\Rectangle.fs" />
+    <Compile Include="Helpers\ImageLoader.fs" />
+    <Compile Include="Basic.fs" />
+    <Compile Include="Global.fs" />
+    <Compile Include="HtmlData.fs" />
+    <Compile Include="RenderElementMethods.fs" />
+    <Compile Include="TextCreator.fs" />
+    <Compile Include="Camera.fs" />
+    <Compile Include="Builder.fs" />
+    <Compile Include="Book.fs" />
+    <Compile Include="BrowserComponent.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AngleSharp" Version="1.1.2" />
+    <PackageReference Include="Apos.Input" Version="2.4.2" />
+    <PackageReference Include="FontStashSharp.MonoGame" Version="1.3.9" />
+    <PackageReference Update="FSharp.Core" Version="8.0.200" />
+    <PackageReference Include="Markdig" Version="0.37.0" />
+    <PackageReference Include="monogame.framework.desktopgl" Version="3.8.1.793-develop" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.4" />
+  </ItemGroup>
+
+</Project>
