@@ -8,6 +8,9 @@ MonoBrowser Core is a markdown rendering engine written in F# for [MonoGame](htt
 
 
 ## Documenation
+
+Install via Nuget: `dotnet add package MonoBrowser --version 0.0.1-alpha`
+
 1. Add component to your game or project
 
 ```
