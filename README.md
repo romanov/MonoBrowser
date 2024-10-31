@@ -16,7 +16,7 @@ Install via Nuget: `dotnet add package MonoBrowser --version 0.0.1-alpha`
 ```
 var browserWindow = new Rectangle(10, 10, _graphics.PreferredBackBufferWidth - 20, _graphics.PreferredBackBufferHeight - 20);
 
-var browser = new OleaComponent(this, browserWindow)
+var browser = new BrowserComponent(this, browserWindow)
 {
     EnableDebug = true,
     EnableScrollbar = true,
