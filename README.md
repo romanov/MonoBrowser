@@ -4,8 +4,7 @@
 # MonoBrowser Core
 MonoBrowser Core is a markdown rendering engine written in F# for [MonoGame](https://monogame.net), and adaptable to desktop, mobile, and embedded C#/F# applications.
 
-![image](https://github.com/user-attachments/assets/7aad1f49-cf83-423c-8445-78c8d53f7001)
-
+![image](https://github.com/user-attachments/assets/0393dcbb-82c1-4f7e-8893-3bfb2c0efacd)
 
 ## Documenation
 
