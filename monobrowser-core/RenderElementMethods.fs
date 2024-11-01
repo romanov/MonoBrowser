@@ -64,10 +64,10 @@ type RenderElement with
         
         let item = this.Children
                    |> Array.tryItem (index - 1)
-        
+                   
         match item with
-             | Some(element) -> Point(this.Outline.Location.X, (element.Outline.Location.Y + element.Outline.Height))
-             | None -> this.Outline.Location
+             | Some(element) -> Point(this.Outline.Location.X + this.Padding.Left, (element.Outline.Location.Y + element.Outline.Height))
+             | None -> this.Outline.Location + Point(this.Padding.Left, this.Padding.Top)
              
              
     

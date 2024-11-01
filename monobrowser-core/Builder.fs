@@ -71,17 +71,18 @@ let createChildNodesWithPrepend (nodes: INodeList, maxWidth: int, font: string, 
 
     let blocks = ResizeArray<TextData>()
 
+    let mutable isFirst = true
+    
     for item in nodes do
 
         let textContent =
-            match childMode with
-            | Number ->
-                (listItem <- listItem + 1
-                 $"{listItem}. " + item.TextContent)
-            | Bullet -> "• " + item.TextContent
-            | Code -> item.TextContent
+            match childMode, isFirst with
+            | Bullet, true   -> ("• " + item.TextContent)
+            | Code, _ -> item.TextContent
             | _ -> item.TextContent
 
+        isFirst <- false
+        
         if item.NodeName = "IMG" && Global.AllowImages then
             do
 
@@ -99,10 +100,10 @@ let createChildNodesWithPrepend (nodes: INodeList, maxWidth: int, font: string, 
                       Display = DisplayMode.Block
                       Padding = BoxPad.Zero
                       Margin =
-                        { Top = 10
+                        { Top = 20
                           Left = 0
                           Right = 0
-                          Bottom = 10 }
+                          Bottom = 20 }
                       IsClickable = false }
 
                 appendBlocks.Add(imageEl)
@@ -167,15 +168,10 @@ let createChildNodes (nodes: INodeList, maxWidth: int, font: string) =
 
 let rec CreateElement (inputElement: IElement, font: string[]) : RenderElement =
 
-    // printfn $"{inputElement.TagName}"
-
     let children =
         inputElement.Children
         |> Seq.map (fun x -> CreateElement(x, font))
         |> Seq.toArray
-
-    // if inputElement.NodeName = "BLOCKQUOTE" then do
-    //     Debugger.Break()
 
     let element: RenderElement =
         
@@ -188,11 +184,7 @@ let rec CreateElement (inputElement: IElement, font: string[]) : RenderElement =
               Children = children
               Payload = TextNode(inputElement.TextContent, Color.White, "default")
               Display = DisplayMode.Block
-              Padding =
-                { Top = 0
-                  Left = 0
-                  Right = 0
-                  Bottom = 0 }
+              Padding = BoxPad.Zero
               Margin = BoxPad.Zero
               IsClickable = false }
 
@@ -274,15 +266,15 @@ let rec CreateElement (inputElement: IElement, font: string[]) : RenderElement =
               Payload = BLOCKQUOTE(inputElement.ChildNodes)
               Display = DisplayMode.Block
               Padding =
-                { Top = 6
-                  Left = 10
+                { Top = 30
+                  Left = 25
                   Right = 0
-                  Bottom = 10 }
+                  Bottom = 30 }
               Children = children
               Margin =
                 { Top = 10
                   Bottom = 10
-                  Left = 20
+                  Left = 0
                   Right = 0 }
               IsClickable = false }
 
@@ -293,10 +285,10 @@ let rec CreateElement (inputElement: IElement, font: string[]) : RenderElement =
               Display = DisplayMode.Block
               Children = children
               Padding =
-                { Top = 6
-                  Left = 15
+                { Top = 30
+                  Left = 25
                   Right = 0
-                  Bottom = 10 }
+                  Bottom = 30 }
               Margin =
                 { Top = 10
                   Bottom = 10
@@ -310,11 +302,7 @@ let rec CreateElement (inputElement: IElement, font: string[]) : RenderElement =
               Outline = Rectangle(0, 0, Global.MaxRenderWidth, 0)
               Payload = UL(RandomHelp.CreateString(10))
               Display = DisplayMode.Block
-              Padding =
-                { Top = 20
-                  Left = 0
-                  Right = 0
-                  Bottom = 20 }
+              Padding = BoxPad.Zero
               Children = children
               Margin = BoxPad.Zero
               IsClickable = false }
@@ -375,12 +363,22 @@ let rec AddTextNodes (rootElement: RenderElement option) (element: RenderElement
     let maxWidth =
         match rootElement with
         | Some(parent) ->
+            
             parent.Outline.Width
             - parent.Margin.Left
             - parent.Margin.Right
+            - parent.Padding.Left
+            - parent.Padding.Right
             - element.Margin.Left
             - element.Margin.Right
-        | _ -> element.Outline.Width - element.Margin.Left - element.Margin.Right
+            - element.Padding.Left
+            - element.Padding.Right
+            
+        | _ -> element.Outline.Width
+               - element.Margin.Left
+               - element.Margin.Right
+               - element.Padding.Left
+               - element.Padding.Right
 
 
     let children =
@@ -408,30 +406,11 @@ let rec AddSize (element: RenderElement) : RenderElement =
         |> Array.map (_.Outline)
         |> Array.sumBy (_.Height)
 
-    let childrenWidth =
-        newChildren
-        |> Seq.filter (fun x -> not (x.Display = DisplayMode.Inline))
-        |> Seq.map (_.Outline)
-        |> Seq.sumBy (_.Width)
-
-    let childrenPaddingX =
-        newChildren
-        |> Seq.filter (fun x -> not (x.Display = DisplayMode.Inline))
-        |> Seq.map (_.Padding)
-        |> Seq.sumBy (fun x -> x.Left + x.Right)
-
-    let childrenMarginTopBot =
-        newChildren
-        |> Seq.filter (fun x -> not (x.Display = DisplayMode.Inline))
-        |> Seq.map (_.Margin)
-        |> Seq.sumBy (fun x -> x.Top + x.Bottom)
-
-    let childrenPaddingTopBot =
-        newChildren
-        |> Seq.filter (fun x -> not (x.Display = DisplayMode.Inline))
-        |> Seq.map (_.Padding)
-        |> Seq.sumBy (fun x -> x.Top + x.Bottom)
-
+    // let childrenPaddingTop =
+    //     newChildren
+    //     |> Seq.filter (fun x -> not (x.Display = DisplayMode.Inline))
+    //     |> Seq.map (_.Padding)
+    //     |> Seq.sumBy (fun x -> x.Left + x.Right)
 
     let basicSize =
         match element.Display with
@@ -440,6 +419,7 @@ let rec AddSize (element: RenderElement) : RenderElement =
             - Point(element.Margin.Left, 0)
             - Point(element.Margin.Right, 0)
             + Point(0, childrenHeight)
+            + Point(0, element.Padding.Top + element.Padding.Bottom) // <- PADDING
 
     let newSize = Rectangle(element.Outline.Location, basicSize)
 
@@ -455,32 +435,23 @@ let rec AddSize (element: RenderElement) : RenderElement =
             Outline = newSize
             Children = newChildren }
 
-
+// Calculte position of each block + margin + padding
 let rec RefreshPosition (element: RenderElement) (rootElement: RenderElement option) =
 
     let newPosition =
         match (element.Display, rootElement) with
         | DisplayMode.Block, None -> element.Outline.Location + Global.Window.Location + Global.WindowPadding
-        | DisplayMode.Block, Some(parent) ->
-            (
-
-             let prev = parent.PrevBlockPosition element
-             Point(parent.Outline.X + element.Margin.Left, prev.Y)
-
-            )
+        | DisplayMode.Block, Some(parent)
         | DisplayMode.Anon, Some(parent) ->
             (
-
-         
-                        
-             
              let prevLocation = parent.PrevBlockPosition element
-             Point(parent.Outline.X + parent.Padding.Left, prevLocation.Y)
-
+             Point(parent.Outline.X + parent.Padding.Left + parent.Margin.Left, prevLocation.Y)
             )
+    
         | DisplayMode.Inline, Some(parent) ->
             (
-
+                
+             // inline blocks are always in anon blocks   
              let paddingLeft = parent.Outline.X + parent.Padding.Left + parent.Margin.Left + element.Outline.X
              Point(paddingLeft, parent.Outline.Y)
 
@@ -497,10 +468,10 @@ let rec RefreshPosition (element: RenderElement) (rootElement: RenderElement opt
 
 
 
+/// create top and bottom margin via anonblocks
+let rec AddMarginNodes (inputElement: RenderElement) : RenderElement =
 
-let rec AddMargin (inputElement: RenderElement) : RenderElement =
-
-    let refreshedChildren = inputElement.Children |> Array.map AddMargin
+    let refreshedChildren = inputElement.Children |> Array.map AddMarginNodes
 
     let topMargin =
         { Tag = "margin-top"
@@ -546,7 +517,6 @@ let rec AddPadding (inputElement: RenderElement) : RenderElement =
 
     let children = inputElement.Children |> Seq.map AddPadding |> Seq.toArray
 
-
     let topPadding =
         { Tag = "padding"
           Outline = Rectangle(0, 0, inputElement.Outline.Width, inputElement.Padding.Top)
@@ -567,7 +537,6 @@ let rec AddPadding (inputElement: RenderElement) : RenderElement =
           Margin = BoxPad.Zero
           IsClickable = false }
 
-
     match inputElement.Padding with
     | pad when pad.Top > 0 && pad.Bottom = 0 ->
         { inputElement with
@@ -578,14 +547,13 @@ let rec AddPadding (inputElement: RenderElement) : RenderElement =
     | pad when pad.Top > 0 && pad.Bottom > 0 ->
         (
 
+         
          let newchilds = children |> ResizeArray
          newchilds.Insert(0, topPadding)
          newchilds.Add(bottomPadding)
 
-         { inputElement with
-             Children = newchilds.ToArray() })
+         { inputElement with Children = newchilds.ToArray() })
     | _ ->
-        { inputElement with
-            Children = children }
+        { inputElement with Children = children }
 
 //let childrenWithPadding = Array.append [| topPadding |] children

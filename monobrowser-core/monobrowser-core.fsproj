@@ -11,6 +11,11 @@
     <AssemblyVersion>1</AssemblyVersion>
     <AssemblyName>monobrowser-core</AssemblyName>
     <RootNamespace>org.monobrowser.core </RootNamespace>
+    <PackageId>MonoBrowser</PackageId>
+    <Version>0.0.2-alpha</Version>
+    <PackageLicenseUrl>https://monobrowser.org/license.md</PackageLicenseUrl>
+    <RepositoryUrl>https://github.com/romanov/monobrowser</RepositoryUrl>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
   
   <PropertyGroup>

@@ -35,6 +35,7 @@ type BrowserComponent(game, window:Rectangle) as x =
 
     let mutable camera: Camera2D = Unchecked.defaultof<Camera2D>
     let debug = AnyCondition(KeyboardCondition(Keys.OemTilde))
+    let refreshBtn = AnyCondition(KeyboardCondition(Keys.F5))
 
     let clickLinkEvent = Event<EventHandler<_>,string>()
     
@@ -205,6 +206,9 @@ type BrowserComponent(game, window:Rectangle) as x =
         // TODO: Add your update logic here
         InputHelper.UpdateSetup()
 
+        if refreshBtn.Pressed() && isDebugAllowed then
+            ()
+        
         if debug.Pressed() && isDebugAllowed then
             Global.IsDebug <- not(Global.IsDebug)
           
@@ -310,14 +314,10 @@ type BrowserComponent(game, window:Rectangle) as x =
                 match element.Payload with
                         | LinkNode (_, url) -> clickLinkEvent.Trigger(null, url)
                         | _ -> (
-                            printfn $"{element.Outline}"
+                            printfn $"{element.Tag} = {element.Outline}"
                             )                
         
-        match (element.Display, Global.IsDebug) with
-            | Block, true when not(element.Tag = "BODY") -> border.Draw(spriteBatch, element.Outline, Color.Pink, 1)
-            | Inline, true -> border.Draw(spriteBatch, element.Outline, Color.Blue, 1)
-            | Anon, true -> border.Draw(spriteBatch, element.Outline, Color.Red, 1)
-            | _ -> ()
+   
 
         
         match element.Payload with
@@ -331,26 +331,17 @@ type BrowserComponent(game, window:Rectangle) as x =
                 )
              
              | BODY when Global.IsDebug -> backRect.Draw(spriteBatch, element.Outline, Color.LightYellow)
-
-             
              | IMG(url) -> spriteBatch.Draw(ImageLoader.GetImage(url), element.Outline, Color.White)
-                 
-             | BLOCKQUOTE _ -> (
-                 backRect.Draw(spriteBatch, element.Outline, Color.Beige)
-                 )
-             
-             | CODE _  -> (
-                 backRect.Draw(spriteBatch, element.Outline, Color(245, 247, 249))
-                 )
-               
-             // | Header _ -> (
-             //     let outline = Rectangle(element.Outline.Location + Point(0, element.Outline.Height + 1), Point(window.Width - element.Margin.Right, 1))
-             //     backRect.Draw(spriteBatch, outline, Color.Gray)
-             //     )
+             | BLOCKQUOTE _ -> backRect.Draw(spriteBatch, element.Outline, Color.Beige)
+             | CODE _  -> backRect.Draw(spriteBatch, element.Outline, Color(245, 247, 249))
              | _ -> ()
              
+        match (element.Display, Global.IsDebug) with
+            | Block, true when not(element.Tag = "BODY") -> border.Draw(spriteBatch, element.Outline, Color.Pink, 1)
+            | Inline, true -> border.Draw(spriteBatch, element.Outline, Color.Blue, 1)
+            | Anon, true -> border.Draw(spriteBatch, element.Outline, Color.Red, 1)
+            | _ -> ()
              
       
         for child in element.Children do
-            
             x.DrawElement(child, spriteBatch, border, backRect, font1)

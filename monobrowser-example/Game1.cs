@@ -26,7 +26,7 @@ public class Game1 : Game
         {
             EnableScrollbar = true,
             AllowScroll = true,
-            DisableImages = false,
+            DisableImages = true,
             EnableDebug = true,
         };
 
@@ -42,7 +42,7 @@ public class Game1 : Game
         // load remote document
         browser.Navigate("https://raw.githubusercontent.com/romanov/monobrowser/refs/heads/main/README.md");
         
-        //browser.Navigate("https://raw.githubusercontent.com/romanov/monobrowser/refs/heads/main/TEST.md");
+        //browser.Navigate("https://monobrowser.org/test.md");
         
         
         // load local document

@@ -35,7 +35,7 @@ let private convertMarkdownToRender(text:string, isHtml:bool) =
     
     let nodes =
             Builder.CreateElement (doc.Body, [| "default"; "header1"; "header2" |])
-            |> Builder.AddMargin
+            |> Builder.AddMarginNodes
             |> Builder.AddTextNodes None
             |> Builder.AddSize
 
