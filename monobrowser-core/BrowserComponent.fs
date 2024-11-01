@@ -133,7 +133,10 @@ type BrowserComponent(game, window:Rectangle) as x =
          
          if not(Directory.Exists(path)) then do
             Directory.CreateDirectory(path) |> ignore
-            
+         
+         // check fonts
+                
+               
             let fonts = [|
                 "https://monobrowser.org/fonts/regular.ttf"
                 "https://monobrowser.org/fonts/bold.ttf"
@@ -142,15 +145,17 @@ type BrowserComponent(game, window:Rectangle) as x =
             
             for item in fonts do
             
-                use client = new HttpClient()
-                use s = client.GetStreamAsync(item).Result
-                
                 let uri = Uri(item)
                 let filename = Path.GetFileName(uri.AbsolutePath)
-
-                let filePath = Path.Combine(path, filename) 
-                use fs = new FileStream(filePath, FileMode.OpenOrCreate)
-                s.CopyToAsync(fs).Wait()
+                
+                let localFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Content", "Fonts", filename)
+                
+                if not(File.Exists(localFile)) then do
+                
+                    use client = new HttpClient()
+                    use s = client.GetStreamAsync(item).Result
+                    use fs = new FileStream(localFile, FileMode.OpenOrCreate)
+                    s.CopyToAsync(fs).Wait()
             
          ()
         
