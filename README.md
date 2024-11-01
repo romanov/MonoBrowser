@@ -1,9 +1,9 @@
-![logo_mono](https://github.com/user-attachments/assets/078bc0a3-a624-4b64-8be9-58ea13162d2b)
+![image](https://github.com/user-attachments/assets/04c8e9f5-439d-40cc-be41-a128e697b129)
 
-
-# MonoBrowser Core
-MonoBrowser Core is a markdown rendering engine written in F# for [MonoGame](https://monogame.net), and adaptable to desktop, mobile, and embedded C#/F# applications.
-
+# MonoBrowser
+* MonoBrowser - a browser for markdown files (in development) based on MonoBrowser Core.
+* MonoBrowser Core - a lightweight bare minimum browser component & markdown rendering engine written in F# for [MonoGame](https://monogame.net), and adaptable to desktop, mobile, and embedded C#/F# applications.
+  
 ![image](https://github.com/user-attachments/assets/0393dcbb-82c1-4f7e-8893-3bfb2c0efacd)
 
 ## Documenation
