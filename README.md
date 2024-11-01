@@ -1,8 +1,5 @@
-![image](https://github.com/user-attachments/assets/04c8e9f5-439d-40cc-be41-a128e697b129)
-
 # MonoBrowser
-* MonoBrowser - a browser for markdown files (in development) based on MonoBrowser Core.
-* MonoBrowser Core - a lightweight bare minimum browser component & markdown rendering engine written in F# for [MonoGame](https://monogame.net), and adaptable to desktop, mobile, and embedded C#/F# applications.
+Render markdown files inside your projects and games!
   
 ![image](https://github.com/user-attachments/assets/0393dcbb-82c1-4f7e-8893-3bfb2c0efacd)
 
@@ -35,6 +32,12 @@ Components.Add(browser);
 2. Open remote markdown document with `browser.Navigate("https://yoursite/readme.md")`
 3. Close window with `browser.Close()` 
 
+## About
+
+![image](https://github.com/user-attachments/assets/04c8e9f5-439d-40cc-be41-a128e697b129)
+
+* MonoBrowser - a browser for markdown files (in development) based on MonoBrowser Core.
+* MonoBrowser Core - a lightweight bare minimum browser component & markdown rendering engine written in F# for [MonoGame](https://monogame.net), and adaptable to desktop, mobile, and embedded C#/F# applications.
 
 ## Support
 F#
