@@ -165,11 +165,14 @@ type BrowserComponent(game, window:Rectangle) as x =
     
    
         
-    member private x.LoadPage(url:string, isLocal:bool) =
+    member private x.LoadPage(payload:BrowserUrl) =
         Global.Page.Clear()
         
-        let data = Book.GetPage(url, isLocal, false)
-                
+        let data = match payload with
+                    | FromRemote url -> Book.GetPage(url, false, false)
+                    | FromLocal localFile -> Book.GetPage(localFile, true, false)
+                    | FromString text -> Book.GetFromString(text)
+        
         for item in data.Children do
             Global.Page.Add(item)
             
@@ -185,16 +188,19 @@ type BrowserComponent(game, window:Rectangle) as x =
         loadingThread <- null
         
     
+    member x.FromString(text:string) =
+        loadingThread <- Thread(ParameterizedThreadStart(fun _ -> x.LoadPage(BrowserUrl.FromString(text))))
+        loadingThread.Start()
+
     /// Load remote file into the window
     member x.Navigate(url:string) =
-    
-        loadingThread <- Thread(ParameterizedThreadStart(fun _ -> x.LoadPage(url, false)))
+        loadingThread <- Thread(ParameterizedThreadStart(fun _ -> x.LoadPage(BrowserUrl.FromRemote(url))))
         loadingThread.Start()
         
 
     /// Load local file
     member x.LoadFile(path:string) =
-        loadingThread <- Thread(ParameterizedThreadStart(fun _ -> x.LoadPage(path, true)))
+        loadingThread <- Thread(ParameterizedThreadStart(fun _ -> x.LoadPage(BrowserUrl.FromLocal(path))))
         loadingThread.Start()
     
     

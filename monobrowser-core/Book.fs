@@ -66,7 +66,8 @@ let AddPage(url:string, isHtml:bool) =
     
 
 
-        
+let GetFromString(text:string) =
+   convertMarkdownToRender(text, false)
         
 let GetLocalPage(file:string) =
     let path = Path.Combine(file)

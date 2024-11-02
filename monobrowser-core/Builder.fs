@@ -54,16 +54,7 @@ let rec showTree (parent: RenderElement option) (element: RenderElement) (lvl: i
 
     element.Children |> Array.iter (fun x -> showTree (Some(element)) x (lvl + 1))
 
-
-
-
-let ul_guid = Dictionary<string, int>()
-
-let mutable listItem = 0
-
-
-
-
+let mutable lastItem = 0
 
 let createChildNodesWithPrepend (nodes: INodeList, maxWidth: int, font: string, childMode: ChildMode) =
 
@@ -77,7 +68,11 @@ let createChildNodesWithPrepend (nodes: INodeList, maxWidth: int, font: string, 
 
         let textContent =
             match childMode, isFirst with
-            | Bullet, true   -> ("• " + item.TextContent)
+            | Number, _ when not(item.NodeName = "CODE") -> (
+                                                                     let text = lastItem.ToString() + ". " + item.TextContent
+                                                                     lastItem <- lastItem + 1
+                                                                     text)
+            | Bullet, true -> ("• " + item.TextContent)
             | Code, _ -> item.TextContent
             | _ -> item.TextContent
 
@@ -166,13 +161,14 @@ let createChildNodesWithPrepend (nodes: INodeList, maxWidth: int, font: string, 
 let createChildNodes (nodes: INodeList, maxWidth: int, font: string) =
     createChildNodesWithPrepend (nodes, maxWidth, font, ChildMode.Empty)
 
-let rec CreateElement (inputElement: IElement, font: string[]) : RenderElement =
 
+let rec CreateElement (inputElement: IElement, font: string[]) : RenderElement =
+                                
     let children =
         inputElement.Children
         |> Seq.map (fun x -> CreateElement(x, font))
         |> Seq.toArray
-
+    
     let element: RenderElement =
         
         match inputElement.NodeName with
@@ -296,11 +292,24 @@ let rec CreateElement (inputElement: IElement, font: string[]) : RenderElement =
                   Right = 0 }
               IsClickable = false }
 
-        | "UL"
-        | "OL" ->
+        | "UL" ->
+            
             { Tag = inputElement.NodeName
               Outline = Rectangle(0, 0, Global.MaxRenderWidth, 0)
               Payload = UL(RandomHelp.CreateString(10))
+              Display = DisplayMode.Block
+              Padding = BoxPad.Zero
+              Children = children
+              Margin = BoxPad.Zero
+              IsClickable = false }
+            
+        | "OL" ->
+            
+            let start = (inputElement :?> IHtmlOrderedListElement).Start
+
+            { Tag = inputElement.NodeName
+              Outline = Rectangle(0, 0, Global.MaxRenderWidth, 0)
+              Payload = OL(start)
               Display = DisplayMode.Block
               Padding = BoxPad.Zero
               Children = children
@@ -312,11 +321,7 @@ let rec CreateElement (inputElement: IElement, font: string[]) : RenderElement =
               Outline = Rectangle.Empty
               Payload = LI(inputElement.ChildNodes)
               Display = DisplayMode.Block
-              Padding =
-                { Top = 0
-                  Left = 0
-                  Right = 0
-                  Bottom = 0 }
+              Padding = BoxPad.Zero
               Children = children
               Margin = BoxPad.Zero
               IsClickable = false }
@@ -357,8 +362,8 @@ let rec CreateElement (inputElement: IElement, font: string[]) : RenderElement =
 
 let rec AddTextNodes (rootElement: RenderElement option) (element: RenderElement) : RenderElement =
 
-    let newChildren =
-        element.Children |> Array.map (fun x -> AddTextNodes (Some(element)) x)
+    //let newChildren =
+        //element.Children |> Array.map (fun x -> AddTextNodes (Some(element)) x)
 
     let maxWidth =
         match rootElement with
@@ -380,19 +385,27 @@ let rec AddTextNodes (rootElement: RenderElement option) (element: RenderElement
                - element.Padding.Left
                - element.Padding.Right
 
-
-    let children =
+    let listMode = match rootElement with
+                    | Some(parent) ->
+                        match parent.Payload with
+                                | OL _ -> ChildMode.Number
+                                | UL _ -> ChildMode.Bullet
+                                | _ -> ChildMode.Empty
+                    | None -> ChildMode.Empty
+    
+    
+    let refreshedChildren =
         match element.Payload with
         | Header(childNodes, font) -> createChildNodes (childNodes, maxWidth, font)
         | Paragraph(childNodes) -> createChildNodes (childNodes, maxWidth, "default")
-        | LI(childNodes) -> createChildNodesWithPrepend (childNodes, maxWidth, "default", ChildMode.Bullet)
+        | LI(childNodes) -> createChildNodesWithPrepend (childNodes, maxWidth, "default", listMode)
         | CODE(childNodes) -> createChildNodesWithPrepend (childNodes, maxWidth, "default", ChildMode.Code)
-        | UL guid ->
-            (listItem <- 0
-             newChildren)
-        | _ -> newChildren
-
-    { element with Children = children }
+        | OL start -> (
+                        lastItem <- start
+                        element.Children |> Array.map (fun x -> AddTextNodes (Some(element)) x))
+        | _ -> element.Children |> Array.map (fun x -> AddTextNodes (Some(element)) x)
+        
+    { element with Children = refreshedChildren }
 
 
 

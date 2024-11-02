@@ -16,6 +16,11 @@ open System
 open AngleSharp.Dom
 open Microsoft.Xna.Framework
 
+type BrowserUrl =
+    | FromRemote of string
+    | FromLocal of string
+    | FromString of string
+
 type DebugTreeItem = {
     Outline:Rectangle
     Text:string
@@ -86,7 +91,8 @@ type HtmlElement =
     | BLOCKQUOTE of nodes:INodeList
     | CODE of nodes:INodeList
     | UL of guid:string
-    | LI of nodes:INodeList
+    | OL of start:int
+    | LI of nodes:INodeList 
     | Div
     | IMG of path:string
     | Html
