@@ -3,7 +3,7 @@ Render local and remote markdown files inside your projects and games!
   
 ![image](https://github.com/user-attachments/assets/0393dcbb-82c1-4f7e-8893-3bfb2c0efacd)
 
-## Documenation
+## Quick start
 
 Install via [Nuget](https://www.nuget.org/packages/MonoBrowser/): `dotnet add package MonoBrowser`
 
@@ -31,6 +31,25 @@ Components.Add(browser);
 
 2. Open remote markdown document with `browser.Navigate("https://yoursite/readme.md")`
 3. Close window with `browser.Close()` 
+
+## Documentation
+
+You can load markdown content directly.
+```
+browser.FromString("""
+                           # Game manual
+                           
+                           My game is **awesome** and here you can 
+                           [read more](https://mygame.test) about it.
+                           
+                           ## How to play
+                           
+                           - Run my game
+                           - Click on a play button
+                           - Enjoy!
+                           
+                           """);
+```
 
 ## About
 
