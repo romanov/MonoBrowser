@@ -170,6 +170,7 @@ let private ProccessTextBlock(words:TextData[], font:string, maxWidth:int) =
     
     textNodes
 
+
 // TODO avoid hacky way for tabs
 let private splitLine(line:string) =
     if line.StartsWith("    ") then
@@ -177,6 +178,8 @@ let private splitLine(line:string) =
         split |> Array.append [|"‎ ‎ "|]
     else
         line.Split(null)
+
+
 
 
 // TODO simplify logic, convert to functional    
@@ -188,10 +191,13 @@ let CreateTextBlock(inputBlocks:TextData[], font:string, maxWidth:int, isCode:bo
     
     for item in inputBlocks do
         
+        // chunks
+        
+        
         let lines = item.Text.Split([|"\n";|], StringSplitOptions.None)
         
         for line in lines do
-
+                    
                     if isCode then do
                         let words = splitLine(line) |> Array.map (fun x -> { Text = x; TextType = item.TextType })
                         let codeblock = ProccessTextBlock(words, font, maxWidth)

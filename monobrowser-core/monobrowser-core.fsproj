@@ -29,6 +29,7 @@
     <Compile Include="Helpers\DataValidation.fs" />
     <Compile Include="Helpers\Rectangle.fs" />
     <Compile Include="Helpers\ImageLoader.fs" />
+    <Compile Include="Helpers\Helpers.fs" />
     <Compile Include="Basic.fs" />
     <Compile Include="Global.fs" />
     <Compile Include="HtmlData.fs" />
@@ -38,6 +39,7 @@
     <Compile Include="Builder.fs" />
     <Compile Include="Book.fs" />
     <Compile Include="BrowserComponent.fs" />
+    <Content Include="test.md" />
   </ItemGroup>
 
   <ItemGroup>

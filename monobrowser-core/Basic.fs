@@ -29,6 +29,7 @@ type DebugTreeItem = {
 type TextType =
     | Empty
     | Default
+    | Accent
     | Link of url:string
     | Strong
     | Header

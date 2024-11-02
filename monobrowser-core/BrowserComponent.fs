@@ -166,6 +166,7 @@ type BrowserComponent(game, window:Rectangle) as x =
    
         
     member private x.LoadPage(payload:BrowserUrl) =
+        
         Global.Page.Clear()
         
         let data = match payload with
@@ -233,7 +234,7 @@ type BrowserComponent(game, window:Rectangle) as x =
         
         mouseRect <- Rectangle(invert, Point(5,5))
         
-        InputHelper.TextEvents.ForEach(fun x-> printfn $"{x.Character}")
+        //InputHelper.TextEvents.ForEach(fun x-> printfn $"{x.Character}")
         
         InputHelper.UpdateCleanup()
 

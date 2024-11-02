@@ -33,9 +33,6 @@ let mutable MaxRenderWidth = 0
 let mutable WindowWidth = 0
 let mutable WindowHeight = 0
 
-
 let Fonts = Dictionary<string, DynamicSpriteFont>()
 let Page = ConcurrentBag<RenderElement>()
-
 let DebugData = ConcurrentBag<DebugTreeItem>()
-

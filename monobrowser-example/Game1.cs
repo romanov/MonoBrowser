@@ -37,13 +37,9 @@ public class Game1 : Game
         };
         
         Components.Add(browser);
-        
-        
+
         // load remote document
         browser.Navigate("https://raw.githubusercontent.com/romanov/monobrowser/refs/heads/main/README.md");
-        
-        //browser.Navigate("https://monobrowser.org/test.md");
-        
         
         // load local document
         // browser.LoadFile("path to your file");

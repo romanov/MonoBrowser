@@ -114,6 +114,14 @@ let createChildNodesWithPrepend (nodes: INodeList, maxWidth: int, font: string, 
                       TextType = TextType.Default }
 
                 blocks.Add(i1)
+        
+        if item.NodeName = "BR" then do
+            blocks.Add({ Text = textContent; TextType = TextType.Newline })
+                
+                
+        if item.NodeName = "EM" then
+            do
+                blocks.Add({ Text = textContent; TextType = TextType.Accent })
 
         if item.NodeName = "CODE" then
             do
@@ -153,8 +161,20 @@ let createChildNodesWithPrepend (nodes: INodeList, maxWidth: int, font: string, 
         | ChildMode.Code -> true
         | _ -> false
 
-    let textBlocks = CreateTextBlock(blocks.ToArray(), font, maxWidth, code)
-    appendBlocks.AddRange(textBlocks)
+    
+    let proccess = Queue<TextData>(blocks)
+    let chunck = ResizeArray<TextData>()
+    
+    while proccess.Count > 0 do
+        let item = proccess.Dequeue()
+        
+        if item.TextType = TextType.Newline then do
+            appendBlocks.AddRange(CreateTextBlock(chunck.ToArray(), font, maxWidth, code))
+            chunck.Clear()
+        else
+            chunck.Add(item)
+            
+    appendBlocks.AddRange(CreateTextBlock(chunck.ToArray(), font, maxWidth, code))
     appendBlocks.ToArray()
 
 
@@ -232,7 +252,7 @@ let rec CreateElement (inputElement: IElement, font: string[]) : RenderElement =
               Display = DisplayMode.Block
               Padding = BoxPad.Zero
               Margin =
-                { Top = 20
+                { Top = 0
                   Left = 0
                   Right = 0
                   Bottom = 10 }
