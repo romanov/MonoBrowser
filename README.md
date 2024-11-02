@@ -5,7 +5,7 @@ Render local and remote markdown files inside your projects and games!
 
 ## Documenation
 
-Install via Nuget: `dotnet add package MonoBrowser --version 0.0.1-alpha`
+Install via [Nuget](https://www.nuget.org/packages/MonoBrowser/): `dotnet add package MonoBrowser`
 
 1. Add component to your game or project
 
