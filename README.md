@@ -1,7 +1,8 @@
 # MonoBrowser Core
 Render local and remote markdown files inside your projects and games!
   
-![image](https://github.com/user-attachments/assets/0393dcbb-82c1-4f7e-8893-3bfb2c0efacd)
+![app1](https://github.com/user-attachments/assets/73d60b78-f2e6-4e70-b791-807830391b67)
+
 
 ## Quick start
 
@@ -59,16 +60,14 @@ browser.FromString("""
 * MonoBrowser Core - a lightweight bare minimum browser component & markdown rendering engine written in F# for [MonoGame](https://monogame.net), and adaptable to desktop, mobile, and embedded C#/F# applications.
 
 ## Support
-F#
-C#
+Works in your C# or F# MonoGame projects.
+Library tested on Windows 11, and Mac OS Sequoia 15.0
 
-## Version
-This is alpha version, some markdown tags are missing!
 
 ## Roadmap
-1. Font dowloading
-2. Styles
-3. Smooth scrolling
+1. Multiple windows.
+2. Basic styles.
+3. Smooth scrolling.
 
 ## Licenses
 [ImageSharp](https://github.com/SixLabors/ImageSharp) - allows convert images to PNG and load it to the game
