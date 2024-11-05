@@ -16,6 +16,15 @@ open System
 open AngleSharp.Dom
 open Microsoft.Xna.Framework
 
+type Settings = {
+    TextColor:string
+    LinkColor:string
+    BackgroundColor:string
+    CodeColor:string
+    CodeBackground:string
+    BlockquoteBackground:string
+}
+
 type BrowserUrl =
     | FromRemote of string
     | FromLocal of string

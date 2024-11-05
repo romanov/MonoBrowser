@@ -30,6 +30,11 @@ public class Game1 : Game
             EnableDebug = true,
         };
 
+        browser.OnContentLoaded += (_, _) =>
+        {
+            Console.WriteLine("page loaded");
+        };
+        
         browser.OnLinkClicked += (_, url) =>
         {
             // load new page or invoke method inside your game

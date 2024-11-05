@@ -37,7 +37,11 @@ type BrowserComponent(game, window:Rectangle) as x =
     let debug = AnyCondition(KeyboardCondition(Keys.OemTilde))
     let refreshBtn = AnyCondition(KeyboardCondition(Keys.F5))
 
-    let clickLinkEvent = Event<EventHandler<_>,string>()
+    // EVENTS
+    
+    let clickLinkEvent = Event<EventHandler<_>, string>()
+    
+    let pageLoadedEvent = Event<EventHandler<_>, string>()
     
     let mutable mouseRect = Rectangle.Empty
     
@@ -77,6 +81,12 @@ type BrowserComponent(game, window:Rectangle) as x =
     [<CLIEvent>]
     member x.OnLinkClicked = 
         clickLinkEvent.Publish
+        
+        
+    /// fires when remote link, file or local content loaded to the page    
+    [<CLIEvent>]
+    member x.OnContentLoaded = 
+        pageLoadedEvent.Publish
     
     override x.Initialize() =
        
@@ -101,6 +111,9 @@ type BrowserComponent(game, window:Rectangle) as x =
     override x.LoadContent() =
 
         x.SetupDefaultFonts()
+        
+        //let textureStream = System.Reflection.Assembly.GetEntryAssembly().GetManifestResourceStream("MyProject.Resources.myimage.png");
+        //let texture = Texture2D.FromStream(game.GraphicsDevice, textureStream)
         
         let folder = AppDomain.CurrentDomain.BaseDirectory
         
@@ -134,13 +147,12 @@ type BrowserComponent(game, window:Rectangle) as x =
          
          if not(Directory.Exists(path)) then do
             Directory.CreateDirectory(path) |> ignore
-         
-         // check fonts
-                
+         else
                
             let fonts = [|
                 "https://monobrowser.org/fonts/regular.ttf"
                 "https://monobrowser.org/fonts/bold.ttf"
+                "https://monobrowser.org/fonts/light.ttf"
             |]
             
             
@@ -180,6 +192,14 @@ type BrowserComponent(game, window:Rectangle) as x =
         //Builder.showTree (None) (page1) (0)
         
         isActive <- true
+        
+        let info = match payload with
+                    | FromRemote url -> "Link"
+                    | FromLocal localFile -> "Local file"
+                    | FromString text -> "Content"
+        
+        pageLoadedEvent.Trigger(null, info)
+        
         ()
 
     /// Close window and stop listening to events
@@ -301,15 +321,12 @@ type BrowserComponent(game, window:Rectangle) as x =
     member private x.DrawScrollbar(spriteBatch:SpriteBatch) =
          
          if Global.ContentHeight > 0 then do
-            
-            // TODO scroller fix
+            // TODO scroller pos fix
             let steps = Math.Round((float Global.ContentHeight - float window.Height - float window.Y) / float 40) + 1.0
             let thick = (float window.Height / steps)
             let scroller_y = (float thick) * Math.Round(float camera.Position.Y / float 40)
-            
-            filledRect.Draw(spriteBatch, Rectangle(window.Width - 2, window.Top + 3, 8, window.Height - 5), ColorHelper.FromHex("#f5f5f5"))
-         
-            filledRect.Draw(spriteBatch, Rectangle(window.Width - 2, int scroller_y, 8, int thick), Color.Gray)
+            filledRect.Draw(spriteBatch, Rectangle(window.Width + 2, window.Top + 3, 8, window.Height - 5), ColorHelper.FromHex("#f5f5f5"))
+            filledRect.Draw(spriteBatch, Rectangle(window.Width + 2, int scroller_y, 8, int thick), Color.Gray)
          
         
         
