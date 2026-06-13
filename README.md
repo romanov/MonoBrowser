@@ -80,4 +80,4 @@ Library tested on Windows 11, and Mac OS Sequoia 15.0
 
 [Apos Input](https://github.com/Apostolique/Apos.Input) - events
 
-[Inter font](https://openfontlicense.org/) - default font
+[Open Sans font](https://github.com/googlefonts/opensans) - default font
