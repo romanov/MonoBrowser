@@ -39,6 +39,8 @@ type BrowserComponent(game, window:Rectangle) as x =
 
     // EVENTS
     
+    let browserReadyEvent = Event<EventHandler<_>, string>()
+    
     let clickLinkEvent = Event<EventHandler<_>, string>()
     
     let pageLoadedEvent = Event<EventHandler<_>, string>()
@@ -62,7 +64,10 @@ type BrowserComponent(game, window:Rectangle) as x =
     let mutable isNavbarEnabled = false
     
     let mutable navbarText = "https://google.com"
-    
+
+    // last loaded payload, used by F5 to reload the current page
+    let mutable lastPayload : BrowserUrl option = None
+
     member x.EnableScrollbar with set (value) = isScrollbarVisible <- value
     
     member x.EnableNavbar with set (value) = isNavbarEnabled <- value
@@ -78,6 +83,10 @@ type BrowserComponent(game, window:Rectangle) as x =
     /// Allow images for remote documents. Warning: the app will download and resize images for Texture2D
     member x.DisableImages with set value = Global.AllowImages <- not(value)
     
+    [<CLIEvent>]
+    member x.OnReady = 
+        browserReadyEvent.Publish
+        
     [<CLIEvent>]
     member x.OnLinkClicked = 
         clickLinkEvent.Publish
@@ -103,6 +112,8 @@ type BrowserComponent(game, window:Rectangle) as x =
         Global.MaxRenderWidth <- window.Width - ( Global.WindowPadding.Y * 2)
 
         spriteBatch.GraphicsDevice.ScissorRectangle <- window
+
+        browserReadyEvent.Trigger(null, "done")
 
         base.Initialize()
 
@@ -139,37 +150,36 @@ type BrowserComponent(game, window:Rectangle) as x =
         ()
         
     member private x.SetupDefaultFonts() =
-         
-         if not(System.Net.NetworkInformation.NetworkInterface.GetIsNetworkAvailable()) then do
-             raise (Exception("Please, create 'Content/Fonts' folder and put files 'regular.ttf' and 'bold.ttf'"))
-         
+
          let path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Content", "Fonts")
-         
-         if not(Directory.Exists(path)) then do
-            Directory.CreateDirectory(path) |> ignore
-         else
-               
-            let fonts = [|
-                "https://monobrowser.org/fonts/regular.ttf"
-                "https://monobrowser.org/fonts/bold.ttf"
-                "https://monobrowser.org/fonts/light.ttf"
-            |]
-            
-            
-            for item in fonts do
-            
-                let uri = Uri(item)
-                let filename = Path.GetFileName(uri.AbsolutePath)
-                
-                let localFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Content", "Fonts", filename)
-                
-                if not(File.Exists(localFile)) then do
-                
-                    use client = new HttpClient()
-                    use s = client.GetStreamAsync(item).Result
-                    use fs = new FileStream(localFile, FileMode.OpenOrCreate)
-                    s.CopyToAsync(fs).Wait()
-            
+
+         // CreateDirectory is a no-op when the folder already exists
+         Directory.CreateDirectory(path) |> ignore
+
+         let fonts = [|
+             "https://github.com/googlefonts/opensans/raw/refs/heads/main/fonts/ttf/OpenSans-Regular.ttf"
+             "https://github.com/googlefonts/opensans/raw/refs/heads/main/fonts/ttf/OpenSans-Bold.ttf"
+             "https://github.com/googlefonts/opensans/raw/refs/heads/main/fonts/ttf/OpenSans-Light.ttf"
+         |]
+
+         let localFileFor (item:string) =
+             let filename = (Path.GetFileName(Uri(item).AbsolutePath).Split("-")[1]).ToLowerInvariant()
+             Path.Combine(path, filename)
+
+         let missing = fonts |> Array.filter (fun item -> not (File.Exists(localFileFor item)))
+
+         // Only the internet can supply missing fonts; fail clearly if it is unavailable
+         if missing.Length > 0 && not (System.Net.NetworkInformation.NetworkInterface.GetIsNetworkAvailable()) then
+             raise (Exception("Font files are missing. Create a 'Content/Fonts' folder with 'regular.ttf' and 'bold.ttf', or connect to the internet so they can be downloaded."))
+
+         for item in missing do
+             let localFile = localFileFor item
+
+             use client = new HttpClient()
+             use s = client.GetStreamAsync(item).Result
+             use fs = new FileStream(localFile, FileMode.OpenOrCreate)
+             s.CopyToAsync(fs).Wait()
+
          ()
         
     
@@ -177,20 +187,21 @@ type BrowserComponent(game, window:Rectangle) as x =
     
    
         
-    member private x.LoadPage(payload:BrowserUrl) =
-        
+    member private x.LoadPage(payload:BrowserUrl, forceRefresh:bool) =
+
         Global.Page.Clear()
-        
+
         let data = match payload with
-                    | FromRemote url -> Book.GetPage(url, false, false)
-                    | FromLocal localFile -> Book.GetPage(localFile, true, false)
+                    | FromRemote url -> Book.GetPage(url, false, false, forceRefresh)
+                    | FromLocal localFile -> Book.GetPage(localFile, true, false, forceRefresh)
                     | FromString text -> Book.GetFromString(text)
-        
+
         for item in data.Children do
             Global.Page.Add(item)
-            
+
         //Builder.showTree (None) (page1) (0)
-        
+
+        lastPayload <- Some payload
         isActive <- true
         
         let info = match payload with
@@ -210,53 +221,57 @@ type BrowserComponent(game, window:Rectangle) as x =
         
     
     member x.FromString(text:string) =
-        loadingThread <- Thread(ParameterizedThreadStart(fun _ -> x.LoadPage(BrowserUrl.FromString(text))))
+        loadingThread <- Thread(ParameterizedThreadStart(fun _ -> x.LoadPage(BrowserUrl.FromString(text), false)))
         loadingThread.Start()
 
     /// Load remote file into the window
     member x.Navigate(url:string) =
-        loadingThread <- Thread(ParameterizedThreadStart(fun _ -> x.LoadPage(BrowserUrl.FromRemote(url))))
+        loadingThread <- Thread(ParameterizedThreadStart(fun _ -> x.LoadPage(BrowserUrl.FromRemote(url), false)))
         loadingThread.Start()
         
 
     /// Load local file
     member x.LoadFile(path:string) =
-        loadingThread <- Thread(ParameterizedThreadStart(fun _ -> x.LoadPage(BrowserUrl.FromLocal(path))))
+        loadingThread <- Thread(ParameterizedThreadStart(fun _ -> x.LoadPage(BrowserUrl.FromLocal(path), false)))
         loadingThread.Start()
-    
-    
+
+
     override x.Update(gameTime) =
 
-        if not(isActive) then do
-            ()
-        
-        // TODO: Add your update logic here
-        InputHelper.UpdateSetup()
+        // skip all input/scroll work while there is no active page
+        if isActive then
 
-        if refreshBtn.Pressed() && isDebugAllowed then
-            ()
-        
-        if debug.Pressed() && isDebugAllowed then
-            Global.IsDebug <- not(Global.IsDebug)
-          
-        if MouseCondition.Scrolled() then
-            do
-                let sc = MouseCondition.ScrollDelta
+            InputHelper.UpdateSetup()
 
-                if sc > 100 then
-                    camera.MoveCamera(Vector2(0f, 40f))
-                else
-                    if (int camera.Position.Y + Global.WindowHeight) <= Global.ContentHeight + Global.WindowPadding.Y then
-                        camera.MoveCamera(Vector2(0f, -40f))
+            // F5 reloads the current page, bypassing the cache
+            if refreshBtn.Pressed() && isDebugAllowed then
+                match lastPayload with
+                | Some payload ->
+                    loadingThread <- Thread(ParameterizedThreadStart(fun _ -> x.LoadPage(payload, true)))
+                    loadingThread.Start()
+                | None -> ()
+
+            if debug.Pressed() && isDebugAllowed then
+                Global.IsDebug <- not(Global.IsDebug)
+
+            if MouseCondition.Scrolled() then
+                do
+                    let sc = MouseCondition.ScrollDelta
+
+                    if sc > 100 then
+                        camera.MoveCamera(Vector2(0f, 40f))
+                    else
+                        if (int camera.Position.Y + Global.WindowHeight) <= Global.ContentHeight + Global.WindowPadding.Y then
+                            camera.MoveCamera(Vector2(0f, -40f))
 
 
-        let invert = InputHelper.NewMouse.Position + Point(0, int camera.Position.Y);
-        
-        mouseRect <- Rectangle(invert, Point(5,5))
-        
-        //InputHelper.TextEvents.ForEach(fun x-> printfn $"{x.Character}")
-        
-        InputHelper.UpdateCleanup()
+            let invert = InputHelper.NewMouse.Position + Point(0, int camera.Position.Y)
+
+            mouseRect <- Rectangle(invert, Point(5,5))
+
+            //InputHelper.TextEvents.ForEach(fun x-> printfn $"{x.Character}")
+
+            InputHelper.UpdateCleanup()
 
         ()
 

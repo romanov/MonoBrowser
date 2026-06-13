@@ -75,7 +75,7 @@ type Styles = {
 type ChildMode =
     | Empty
     | Bullet
-    | Number
+    | Number of int
     | Code
 
 type DisplayMode =
@@ -112,6 +112,8 @@ type HtmlElement =
     | HR
     
 type RenderElement = {
+    /// stable unique identity, assigned once at construction (see RenderElement.mkElement)
+    Id:int
     Tag:string
     mutable Outline:Rectangle
     Children: RenderElement[]

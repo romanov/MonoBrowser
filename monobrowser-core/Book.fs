@@ -75,14 +75,18 @@ let GetLocalPage(file:string) =
     convertMarkdownToRender(file, true)
     
     
-    // C# support    
-let GetPage(url:string, isLocal:bool, [<Optional; DefaultParameterValue(false)>]isHtml: bool) =
-    
+    // C# support
+let GetPage(url:string, isLocal:bool, [<Optional; DefaultParameterValue(false)>]isHtml: bool, [<Optional; DefaultParameterValue(false)>]forceRefresh: bool) =
+
     let name = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(url))
-    
+
     if isLocal then
         GetLocalPage(url)
-    else 
+    elif forceRefresh then
+        // drop any cached copy so the page is re-fetched from source
+        pages.TryRemove(name) |> ignore
+        AddPage(url, isHtml)
+    else
         match pages.ContainsKey(name) with
             | true -> pages[name]
             | false -> AddPage(url, isHtml)

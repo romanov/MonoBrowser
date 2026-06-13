@@ -2,8 +2,12 @@
 
 open System
 open System.Linq
+open NanoidDotNet
 
 let CreateString(length:int) =
+    Nanoid.Generate()
+
+let CreateStringOld(length:int) =
     let chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
     let data = new string(Enumerable.Repeat(chars, length).Select(fun s -> s[System.Random.Shared.Next(s.Length)]).ToArray())
     data

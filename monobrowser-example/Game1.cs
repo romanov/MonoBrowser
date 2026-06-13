@@ -43,14 +43,23 @@ public class Game1 : Game
         
         Components.Add(browser);
 
-        // load remote document
-        browser.Navigate("https://raw.githubusercontent.com/romanov/monobrowser/refs/heads/main/README.md");
-        
-        // load local document
-        // browser.LoadFile("path to your file");
-        
-        // load local document from Content folder of your app
-        // browser.Navigate("content://TEST.md");
+        // in alpha version you need to wait component to download fonts and some loading logic
+        // or force Component.LoadContent()
+        browser.OnReady += (_, _) =>
+        {
+            // load remote document
+            browser.Navigate("https://raw.githubusercontent.com/romanov/monobrowser/refs/heads/main/README.md");
+            
+            // load local document
+            // browser.LoadFile("path to your file");
+
+            // load local document from Content folder of your app
+            // browser.Navigate("content://TEST.md");
+            
+        };
+
+      
+      
     }
 
     protected override void Initialize()

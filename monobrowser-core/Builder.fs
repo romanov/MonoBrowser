@@ -54,8 +54,6 @@ let rec showTree (parent: RenderElement option) (element: RenderElement) (lvl: i
 
     element.Children |> Array.iter (fun x -> showTree (Some(element)) x (lvl + 1))
 
-let mutable lastItem = 0
-
 let createChildNodesWithPrepend (nodes: INodeList, maxWidth: int, font: string, childMode: ChildMode) =
 
     let appendBlocks = ResizeArray<RenderElement>()
@@ -68,12 +66,8 @@ let createChildNodesWithPrepend (nodes: INodeList, maxWidth: int, font: string, 
 
         let textContent =
             match childMode, isFirst with
-            | Number, _ when not(item.NodeName = "CODE") -> (
-                                                                     let text = lastItem.ToString() + ". " + item.TextContent
-                                                                     lastItem <- lastItem + 1
-                                                                     text)
-            | Bullet, true -> ("• " + item.TextContent)
-            | Code, _ -> item.TextContent
+            | Number n, true when not(item.NodeName = "CODE") -> n.ToString() + ". " + item.TextContent
+            | Bullet, true -> "• " + item.TextContent
             | _ -> item.TextContent
 
         isFirst <- false
@@ -88,18 +82,11 @@ let createChildNodesWithPrepend (nodes: INodeList, maxWidth: int, font: string, 
                 let size = ImageLoader.GetImageSize(image.Source)
 
                 let imageEl =
-                    { Tag = "IMG"
-                      Outline = Rectangle(0, 0, size.Width, size.Height)
-                      Children = Array.empty
-                      Payload = IMG(image.Source)
-                      Display = DisplayMode.Block
-                      Padding = BoxPad.Zero
-                      Margin =
-                        { Top = 20
-                          Left = 0
-                          Right = 0
-                          Bottom = 20 }
-                      IsClickable = false }
+                    mkElement { defaults with
+                                  Tag = "IMG"
+                                  Outline = Rectangle(0, 0, size.Width, size.Height)
+                                  Payload = IMG(image.Source)
+                                  Margin = { BoxPad.Zero with Top = 20; Bottom = 20 } }
 
                 appendBlocks.Add(imageEl)
 
@@ -195,34 +182,19 @@ let rec CreateElement (inputElement: IElement, font: string[]) : RenderElement =
 
 
         | "#text" ->
-            { Tag = inputElement.NodeName + " " + RandomHelp.CreateString(5)
-              Outline = Rectangle(Global.WindowPadding.X, 0, Global.MaxRenderWidth, 0)
-              Children = children
-              Payload = TextNode(inputElement.TextContent, Color.White, "default")
-              Display = DisplayMode.Block
-              Padding = BoxPad.Zero
-              Margin = BoxPad.Zero
-              IsClickable = false }
+            mkElement { defaults with
+                          Tag = inputElement.NodeName
+                          Outline = Rectangle(Global.WindowPadding.X, 0, Global.MaxRenderWidth, 0)
+                          Children = children
+                          Payload = TextNode(inputElement.TextContent, Color.White, "default") }
 
 
         | "BODY" ->
-            { Tag = inputElement.NodeName + " " + RandomHelp.CreateString(5)
-              Outline = Rectangle(Global.WindowPadding.X, 0, Global.MaxRenderWidth, 0)
-              Children = children
-              Payload = BODY
-              Display = DisplayMode.Block
-              Padding =
-                { Top = 0
-                  Left = 0
-                  Right = 0
-                  Bottom = 0 }
-              Margin = {
-                  Top = 0 
-                  Left = 0
-                  Right = 0
-                  Bottom = 0 
-              }
-              IsClickable = false }
+            mkElement { defaults with
+                          Tag = inputElement.NodeName
+                          Outline = Rectangle(Global.WindowPadding.X, 0, Global.MaxRenderWidth, 0)
+                          Children = children
+                          Payload = BODY }
 
         // | "IMG"  -> (
         //
@@ -245,134 +217,75 @@ let rec CreateElement (inputElement: IElement, font: string[]) : RenderElement =
 
 
         | "H1" ->
-            { Tag = inputElement.NodeName + " " + RandomHelp.CreateString(5)
-              Outline = Rectangle(0, 0, Global.MaxRenderWidth, 0)
-              Children = children
-              Payload = Header(inputElement.ChildNodes, "header1")
-              Display = DisplayMode.Block
-              Padding = BoxPad.Zero
-              Margin =
-                { Top = 0
-                  Left = 0
-                  Right = 0
-                  Bottom = 10 }
-              IsClickable = false }
+            mkElement { defaults with
+                          Tag = inputElement.NodeName
+                          Outline = Rectangle(0, 0, Global.MaxRenderWidth, 0)
+                          Children = children
+                          Payload = Header(inputElement.ChildNodes, "header1")
+                          Margin = { BoxPad.Zero with Bottom = 10 } }
 
 
 
         | "H2"
         | "H3" ->
-            { Tag = inputElement.NodeName + " " + RandomHelp.CreateString(5)
-              Outline = Rectangle(0, 0, Global.MaxRenderWidth, 0)
-              Children = children
-              Payload = Header(inputElement.ChildNodes, "header2")
-              Display = DisplayMode.Block
-              Padding = BoxPad.Zero
-              Margin =
-                { Top = 20
-                  Left = 0
-                  Right = 0
-                  Bottom = 10 }
-              IsClickable = false }
+            mkElement { defaults with
+                          Tag = inputElement.NodeName
+                          Outline = Rectangle(0, 0, Global.MaxRenderWidth, 0)
+                          Children = children
+                          Payload = Header(inputElement.ChildNodes, "header2")
+                          Margin = { BoxPad.Zero with Top = 20; Bottom = 10 } }
 
 
         | "BLOCKQUOTE" ->
-            { Tag = inputElement.NodeName
-              Outline = Rectangle(0, 0, Global.MaxRenderWidth, 0)
-              Payload = BLOCKQUOTE(inputElement.ChildNodes)
-              Display = DisplayMode.Block
-              Padding =
-                { Top = 30
-                  Left = 25
-                  Right = 0
-                  Bottom = 30 }
-              Children = children
-              Margin =
-                { Top = 10
-                  Bottom = 10
-                  Left = 0
-                  Right = 0 }
-              IsClickable = false }
+            mkElement { defaults with
+                          Tag = inputElement.NodeName
+                          Outline = Rectangle(0, 0, Global.MaxRenderWidth, 0)
+                          Children = children
+                          Payload = BLOCKQUOTE(inputElement.ChildNodes)
+                          Padding = { BoxPad.Zero with Top = 30; Left = 25; Bottom = 30 }
+                          Margin = { BoxPad.Zero with Top = 10; Bottom = 10 } }
 
         | "CODE" ->
-            { Tag = inputElement.NodeName
-              Outline = Rectangle(0, 0, Global.MaxRenderWidth, 0)
-              Payload = CODE(inputElement.ChildNodes)
-              Display = DisplayMode.Block
-              Children = children
-              Padding =
-                { Top = 30
-                  Left = 25
-                  Right = 0
-                  Bottom = 30 }
-              Margin =
-                { Top = 10
-                  Bottom = 10
-                  Left = 0
-                  Right = 0 }
-              IsClickable = false }
+            mkElement { defaults with
+                          Tag = inputElement.NodeName
+                          Outline = Rectangle(0, 0, Global.MaxRenderWidth, 0)
+                          Children = children
+                          Payload = CODE(inputElement.ChildNodes)
+                          Padding = { BoxPad.Zero with Top = 30; Left = 25; Bottom = 30 }
+                          Margin = { BoxPad.Zero with Top = 10; Bottom = 10 } }
 
         | "UL" ->
-            
-            { Tag = inputElement.NodeName
-              Outline = Rectangle(0, 0, Global.MaxRenderWidth, 0)
-              Payload = UL(RandomHelp.CreateString(10))
-              Display = DisplayMode.Block
-              Padding = BoxPad.Zero
-              Children = children
-              Margin = BoxPad.Zero
-              IsClickable = false }
-            
+            mkElement { defaults with
+                          Tag = inputElement.NodeName
+                          Outline = Rectangle(0, 0, Global.MaxRenderWidth, 0)
+                          Children = children
+                          Payload = UL(RandomHelp.CreateString(10)) }
+
         | "OL" ->
-            
             let start = (inputElement :?> IHtmlOrderedListElement).Start
 
-            { Tag = inputElement.NodeName
-              Outline = Rectangle(0, 0, Global.MaxRenderWidth, 0)
-              Payload = OL(start)
-              Display = DisplayMode.Block
-              Padding = BoxPad.Zero
-              Children = children
-              Margin = BoxPad.Zero
-              IsClickable = false }
+            mkElement { defaults with
+                          Tag = inputElement.NodeName
+                          Outline = Rectangle(0, 0, Global.MaxRenderWidth, 0)
+                          Children = children
+                          Payload = OL(start) }
 
         | "LI" ->
-            { Tag = inputElement.NodeName
-              Outline = Rectangle.Empty
-              Payload = LI(inputElement.ChildNodes)
-              Display = DisplayMode.Block
-              Padding = BoxPad.Zero
-              Children = children
-              Margin = BoxPad.Zero
-              IsClickable = false }
+            mkElement { defaults with
+                          Tag = inputElement.NodeName
+                          Children = children
+                          Payload = LI(inputElement.ChildNodes) }
 
         | "P" ->
-            { Tag = inputElement.NodeName + " " + RandomHelp.CreateString(5)
-              Outline = Rectangle.Empty
-              Children = children
-              Payload = Paragraph(inputElement.ChildNodes)
-              Display = DisplayMode.Block
-              Padding = BoxPad.Zero
-              Margin =
-                { Left = 0
-                  Top = 0
-                  Right = 0
-                  Bottom = 0 }
-              IsClickable = false }
+            mkElement { defaults with
+                          Tag = inputElement.NodeName
+                          Children = children
+                          Payload = Paragraph(inputElement.ChildNodes) }
 
         | _ ->
-            { Tag = "None"
-              Outline = Rectangle.Empty
-              Children = Array.empty
-              Payload = NotSet
-              Display = DisplayMode.Anon
-              Padding = BoxPad.Zero
-              Margin =
-                { Left = 0
-                  Top = 0
-                  Right = 0
-                  Bottom = 0 }
-              IsClickable = false }
+            mkElement { defaults with
+                          Tag = "None"
+                          Display = DisplayMode.Anon }
 
 
     { element with Children = children }
@@ -408,7 +321,6 @@ let rec AddTextNodes (rootElement: RenderElement option) (element: RenderElement
     let listMode = match rootElement with
                     | Some(parent) ->
                         match parent.Payload with
-                                | OL _ -> ChildMode.Number
                                 | UL _ -> ChildMode.Bullet
                                 | _ -> ChildMode.Empty
                     | None -> ChildMode.Empty
@@ -420,9 +332,22 @@ let rec AddTextNodes (rootElement: RenderElement option) (element: RenderElement
         | Paragraph(childNodes) -> createChildNodes (childNodes, maxWidth, "default")
         | LI(childNodes) -> createChildNodesWithPrepend (childNodes, maxWidth, "default", listMode)
         | CODE(childNodes) -> createChildNodesWithPrepend (childNodes, maxWidth, "default", ChildMode.Code)
-        | OL start -> (
-                        lastItem <- start
-                        element.Children |> Array.map (fun x -> AddTextNodes (Some(element)) x))
+        | OL start ->
+            // Number each <li> by its position so the counter is derived from the
+            // tree, not shared module state (safe across multiple lists and threads).
+            element.Children
+            |> Array.mapi (fun i child ->
+                match child.Payload with
+                | LI childNodes ->
+                    let liMaxWidth =
+                        element.Outline.Width
+                        - element.Margin.Left - element.Margin.Right
+                        - element.Padding.Left - element.Padding.Right
+                        - child.Margin.Left - child.Margin.Right
+                        - child.Padding.Left - child.Padding.Right
+                    { child with
+                        Children = createChildNodesWithPrepend (childNodes, liMaxWidth, "default", ChildMode.Number (start + i)) }
+                | _ -> AddTextNodes (Some(element)) child)
         | _ -> element.Children |> Array.map (fun x -> AddTextNodes (Some(element)) x)
         
     { element with Children = refreshedChildren }
@@ -507,38 +432,29 @@ let rec AddMarginNodes (inputElement: RenderElement) : RenderElement =
     let refreshedChildren = inputElement.Children |> Array.map AddMarginNodes
 
     let topMargin =
-        { Tag = "margin-top"
-          Outline = Rectangle(0, 0, inputElement.Outline.Width, inputElement.Margin.Top)
-          Children = Array.empty
-          Payload = Margin
-          Display = DisplayMode.Anon
-          Padding = BoxPad.Zero
-          Margin = BoxPad.Zero
-          IsClickable = false }
+        mkElement { defaults with
+                      Tag = "margin-top"
+                      Outline = Rectangle(0, 0, inputElement.Outline.Width, inputElement.Margin.Top)
+                      Payload = Margin
+                      Display = DisplayMode.Anon }
 
     let botMargin =
-        { Tag = "margin-bot"
-          Outline = Rectangle(0, 0, inputElement.Outline.Width, inputElement.Margin.Bottom)
-          Children = Array.empty
-          Payload = Margin
-          Display = DisplayMode.Anon
-          Padding = BoxPad.Zero
-          Margin = BoxPad.Zero
-          IsClickable = false }
+        mkElement { defaults with
+                      Tag = "margin-bot"
+                      Outline = Rectangle(0, 0, inputElement.Outline.Width, inputElement.Margin.Bottom)
+                      Payload = Margin
+                      Display = DisplayMode.Anon }
 
     let holderElement =
-        { Tag = "margin-holder"
-          Outline = Rectangle(0, 0, inputElement.Outline.Width, 0)
-          Children =
-            [| topMargin
-               { inputElement with
-                   Children = refreshedChildren }
-               botMargin |]
-          Payload = Margin
-          Display = DisplayMode.Anon
-          Padding = BoxPad.Zero
-          Margin = BoxPad.Zero
-          IsClickable = false }
+        mkElement { defaults with
+                      Tag = "margin-holder"
+                      Outline = Rectangle(0, 0, inputElement.Outline.Width, 0)
+                      Children =
+                        [| topMargin
+                           { inputElement with Children = refreshedChildren }
+                           botMargin |]
+                      Payload = Margin
+                      Display = DisplayMode.Anon }
 
     match (inputElement.Margin, inputElement.Payload) with
     | margin, _ when not(margin.Top = 0) || not(margin.Bottom = 0) -> holderElement
@@ -551,24 +467,18 @@ let rec AddPadding (inputElement: RenderElement) : RenderElement =
     let children = inputElement.Children |> Seq.map AddPadding |> Seq.toArray
 
     let topPadding =
-        { Tag = "padding"
-          Outline = Rectangle(0, 0, inputElement.Outline.Width, inputElement.Padding.Top)
-          Children = Array.empty
-          Payload = Padding
-          Display = DisplayMode.Anon
-          Padding = BoxPad.Zero
-          Margin = BoxPad.Zero
-          IsClickable = false }
+        mkElement { defaults with
+                      Tag = "padding"
+                      Outline = Rectangle(0, 0, inputElement.Outline.Width, inputElement.Padding.Top)
+                      Payload = Padding
+                      Display = DisplayMode.Anon }
 
     let bottomPadding =
-        { Tag = "padding"
-          Outline = Rectangle(0, 0, inputElement.Outline.Width, inputElement.Padding.Bottom)
-          Children = Array.empty
-          Payload = Padding
-          Display = DisplayMode.Anon
-          Padding = BoxPad.Zero
-          Margin = BoxPad.Zero
-          IsClickable = false }
+        mkElement { defaults with
+                      Tag = "padding"
+                      Outline = Rectangle(0, 0, inputElement.Outline.Width, inputElement.Padding.Bottom)
+                      Payload = Padding
+                      Display = DisplayMode.Anon }
 
     match inputElement.Padding with
     | pad when pad.Top > 0 && pad.Bottom = 0 ->
