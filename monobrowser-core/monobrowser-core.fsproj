@@ -5,15 +5,15 @@
     <Title>MonoBrowser Core</Title>
     <Authors>Yury Romanov</Authors>
     <Description>Render engine for MonoGame</Description>
-    <Copyright>2024 Yury Romanov</Copyright>
+    <Copyright>2026 Yury Romanov</Copyright>
     <PackageProjectUrl>https://github.com/romanov/monobrowser</PackageProjectUrl>
     <Product>monobrowser-core</Product>
     <AssemblyVersion>1</AssemblyVersion>
     <AssemblyName>monobrowser-core</AssemblyName>
     <RootNamespace>org.monobrowser.core </RootNamespace>
     <PackageId>MonoBrowser</PackageId>
-    <Version>0.0.2-alpha</Version>
-    <PackageLicenseUrl>https://monobrowser.org/license.md</PackageLicenseUrl>
+    <Version>2.0-alpha</Version>
+    <PackageLicenseUrl>https://github.com/romanov/monobrowser</PackageLicenseUrl>
     <RepositoryUrl>https://github.com/romanov/monobrowser</RepositoryUrl>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>

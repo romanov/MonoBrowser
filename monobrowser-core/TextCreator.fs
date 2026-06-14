@@ -18,6 +18,7 @@ open System.Diagnostics
 open BasicData
 open Microsoft.Xna.Framework
 open System.Linq
+open RenderElementMethods
 
 let private CreateTextNode(words:Word seq, gap:int, font:string) =
     
@@ -43,40 +44,20 @@ let private CreateTextNode(words:Word seq, gap:int, font:string) =
                                 
         let textBlock = match word.TextType with
                             
-                            | TextType.Link url -> (
-                                
-                                  let linkBlock : RenderElement = {
-                                            Tag = "Text"
-                                            Payload = LinkNode(word.Text, url)
-                                            Outline = Rectangle(wordX, 0, word.Width, word.Height)
-                                            Children = Array.empty
-                                            Display = DisplayMode.Inline
-                                            Padding = BoxPad.Zero
-                                            Margin =  BoxPad.Zero
-                                            IsClickable = true
-                                        }
-                                  
-                                  
-                                  linkBlock
-                                  
-                                )
-                            
-                            | _ -> (
-                                
-                                  let textBlock : RenderElement = {
-                                            Tag = "Text"
-                                            Payload = TextNode(word.Text, color, font)
-                                            Outline = Rectangle(wordX + clearFix, 0, word.Width, word.Height)
-                                            Children = Array.empty
-                                            Display = DisplayMode.Inline
-                                            Padding = BoxPad.Zero
-                                            Margin =  BoxPad.Zero
-                                            IsClickable = false 
-                                        }
-                                
-                                  textBlock
-                                
-                                )
+                            | TextType.Link url ->
+                                  mkElement { defaults with
+                                                Tag = "Text"
+                                                Payload = LinkNode(word.Text, url)
+                                                Outline = Rectangle(wordX, 0, word.Width, word.Height)
+                                                Display = DisplayMode.Inline
+                                                IsClickable = true }
+
+                            | _ ->
+                                  mkElement { defaults with
+                                                Tag = "Text"
+                                                Payload = TextNode(word.Text, color, font)
+                                                Outline = Rectangle(wordX + clearFix, 0, word.Width, word.Height)
+                                                Display = DisplayMode.Inline }
         
                 
       
@@ -101,18 +82,12 @@ let private createLine(words:Word[], line:int, gap:int, font:string) =
     let elementHeight = words |> Array.maxBy (_.Height)
       
       // todo fix line width
-    let anonBlock : RenderElement = {
-        Tag = $"Line {line}" + " " + RandomHelp.CreateString(5)
-        Payload = Line
-        Outline = Rectangle(0, 0, elementWidth + (words.Length - 1) * gap, elementHeight.Height)
-        Children = CreateTextNode(words, gap, font)
-        Display = DisplayMode.Anon
-        Padding = BoxPad.Zero
-        Margin =  BoxPad.Zero
-        IsClickable = false 
-    }
-    
-    anonBlock
+    mkElement { defaults with
+                  Tag = $"Line {line}"
+                  Payload = Line
+                  Outline = Rectangle(0, 0, elementWidth + (words.Length - 1) * gap, elementHeight.Height)
+                  Children = CreateTextNode(words, gap, font)
+                  Display = DisplayMode.Anon }
 
 let private CreateTextNodes(words:Word seq, maxWidth:int, wordGap:int, font:string) =
     

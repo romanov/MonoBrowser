@@ -65,8 +65,14 @@ type BrowserComponent(game, window:Rectangle) as x =
     
     let mutable navbarText = "https://google.com"
 
+    // pixels of scroll target movement per wheel notch
+    let scrollStep = 40f
+
     // last loaded payload, used by F5 to reload the current page
     let mutable lastPayload : BrowserUrl option = None
+
+    // set when a new page loads (off-thread) so Update can reset scroll on the game thread
+    let mutable pendingScrollReset = false
 
     member x.EnableScrollbar with set (value) = isScrollbarVisible <- value
     
@@ -202,6 +208,7 @@ type BrowserComponent(game, window:Rectangle) as x =
         //Builder.showTree (None) (page1) (0)
 
         lastPayload <- Some payload
+        pendingScrollReset <- true
         isActive <- true
         
         let info = match payload with
@@ -254,16 +261,22 @@ type BrowserComponent(game, window:Rectangle) as x =
             if debug.Pressed() && isDebugAllowed then
                 Global.IsDebug <- not(Global.IsDebug)
 
-            if MouseCondition.Scrolled() then
-                do
-                    let sc = MouseCondition.ScrollDelta
+            // a newly loaded page starts at the top
+            if pendingScrollReset then
+                camera.SnapScroll(0f)
+                pendingScrollReset <- false
 
-                    if sc > 100 then
-                        camera.MoveCamera(Vector2(0f, 40f))
-                    else
-                        if (int camera.Position.Y + Global.WindowHeight) <= Global.ContentHeight + Global.WindowPadding.Y then
-                            camera.MoveCamera(Vector2(0f, -40f))
+            // wheel sets a scroll target; the camera eases toward it below
+            if isScrollingEnabled && MouseCondition.Scrolled() then
+                let sc = MouseCondition.ScrollDelta
+                let maxScroll =
+                    max 0f (float32 (Global.ContentHeight + Global.WindowPadding.Y - Global.WindowHeight))
 
+                if sc > 0 then camera.ScrollBy(-scrollStep, maxScroll)      // wheel up -> toward top
+                elif sc < 0 then camera.ScrollBy(scrollStep, maxScroll)     // wheel down -> toward bottom
+
+            // smoothly approach the scroll target every frame
+            camera.UpdateScroll(float32 gameTime.ElapsedGameTime.TotalSeconds)
 
             let invert = InputHelper.NewMouse.Position + Point(0, int camera.Position.Y)
 

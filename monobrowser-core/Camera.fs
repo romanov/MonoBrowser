@@ -12,12 +12,17 @@
 
 module Camera
 
+open System
 open Microsoft.Xna.Framework
 open Microsoft.Xna.Framework.Graphics
 
-type Camera2D(viewport: Viewport, graph:GraphicsDevice) = 
+type Camera2D(viewport: Viewport, graph:GraphicsDevice) =
 
     [<DefaultValue>] val mutable Position:Vector2
+
+    /// vertical position the camera eases toward (set by scrolling)
+    [<DefaultValue>] val mutable ScrollTarget:float32
+
     member val Rotation:float32 = 0f
     member val Zoom:float32 = 1f with get,set
     member val Origin:Vector2 = Vector2((float32)viewport.Width / 2f, (float32)viewport.Height / 2f)
@@ -38,6 +43,25 @@ type Camera2D(viewport: Viewport, graph:GraphicsDevice) =
         let newPosition = this.Position - Vector2(pos.X, pos.Y)
         if newPosition.Y >= 0f then
             this.Position <- newPosition
+
+    /// Nudge the scroll target by `delta`, clamped to [0, maxScroll].
+    member this.ScrollBy(delta:float32, maxScroll:float32) =
+        this.ScrollTarget <- MathHelper.Clamp(this.ScrollTarget + delta, 0f, maxScroll)
+
+    /// Jump straight to a vertical position without easing (e.g. on page load).
+    member this.SnapScroll(y:float32) =
+        this.ScrollTarget <- y
+        this.Position <- Vector2(this.Position.X, y)
+
+    /// Ease the camera toward ScrollTarget. `dt` is the frame time in seconds,
+    /// so the motion is the same speed regardless of frame rate. `stiffness`
+    /// controls how quickly it catches up (higher = snappier).
+    member this.UpdateScroll(dt:float32, ?stiffness:float32) =
+        let k = defaultArg stiffness 18f
+        let t = 1f - MathF.Exp(-k * dt)
+        let newY = MathHelper.Lerp(this.Position.Y, this.ScrollTarget, t)
+        // settle exactly once we are within a sub-pixel of the target
+        this.Position <- Vector2(this.Position.X, (if MathF.Abs(this.ScrollTarget - newY) < 0.5f then this.ScrollTarget else newY))
 
     member this.ZoomCamera(lvl:float32) =
         this.Zoom <- lvl

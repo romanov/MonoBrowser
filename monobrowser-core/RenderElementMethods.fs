@@ -16,33 +16,42 @@ open BasicData
 open System.Linq
 open Microsoft.Xna.Framework
 
+// --- element construction ---------------------------------------------------
+// Every RenderElement gets a stable unique Id. Rather than repeat the full
+// record literal (and a random Tag) at each call site, build from `defaults`
+// with copy-and-update and stamp a fresh Id via `mkElement`.
+
+let private idLock = obj()
+let private idCounter = ref 0
+
+let private nextId () =
+    lock idLock (fun () ->
+        idCounter.Value <- idCounter.Value + 1
+        idCounter.Value)
+
+/// A neutral RenderElement template; override only the fields that differ,
+/// then pipe through `mkElement` to receive a unique Id.
+let defaults =
+    { Id = 0
+      Tag = ""
+      Outline = Rectangle.Empty
+      Children = Array.empty
+      Payload = NotSet
+      Display = DisplayMode.Block
+      Padding = BoxPad.Zero
+      Margin = BoxPad.Zero
+      IsClickable = false }
+
+/// Stamp a fresh unique Id onto an element template.
+let mkElement (template: RenderElement) = { template with Id = nextId() }
+
 type RenderElement with
 
     static member WrapBlock(children) =
-        {
-            Tag = "wrapper"
-            Outline = Rectangle.Empty
-            Children = children
-            Payload = HR
-            Display = DisplayMode.Block
-            Padding = BoxPad.Zero
-            Margin = BoxPad.Zero
-            IsClickable = false 
-        }
-        
-    
+        mkElement { defaults with Tag = "wrapper"; Children = children; Payload = HR }
+
     static member CreateLine() =
-        
-        {
-            Tag = "HR"
-            Outline = Rectangle.Empty
-            Children = Array.empty
-            Payload = HR
-            Display = DisplayMode.Block
-            Padding = BoxPad.Zero
-            Margin = BoxPad.Zero
-            IsClickable = false 
-        }
+        mkElement { defaults with Tag = "HR"; Payload = HR }
     
     
     member this.IsOverMe(mouse:Rectangle) =
@@ -60,7 +69,7 @@ type RenderElement with
     member this.PrevBlockPosition (element:RenderElement) =
         
         let index = this.Children
-                    |> Array.findIndex (fun x -> x = element)
+                    |> Array.findIndex (fun x -> x.Id = element.Id)
         
         let item = this.Children
                    |> Array.tryItem (index - 1)
