@@ -27,6 +27,23 @@ browser.OnLinkClicked += (_, url) =>
     Console.WriteLine($"User clicked on: {url}");
 };
 
+
+// in alpha version you need to wait component to download fonts and some loading logic
+// or force Component.LoadContent()
+browser.OnReady += (_, _) =>
+{
+    // load remote document
+    browser.Navigate("https://raw.githubusercontent.com/romanov/monobrowser/refs/heads/main/README.md");
+    
+    // load local document
+    // browser.LoadFile("path to your file");
+
+    // load local document from Content folder of your app
+    // browser.Navigate("content://TEST.md");
+    
+};
+
+
 Components.Add(browser);
 ```
 
