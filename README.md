@@ -52,6 +52,10 @@ Components.Add(browser);
 
 ## Documentation
 
+**F5**: Refresh remote document.
+
+**Tilda**: Open debug menu (in debug mode).
+
 You can load markdown content directly.
 ```
 browser.FromString("""
