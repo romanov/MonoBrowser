@@ -280,7 +280,8 @@ let rec CreateElement (inputElement: IElement, font: string[]) : RenderElement =
             mkElement { defaults with
                           Tag = inputElement.NodeName
                           Children = children
-                          Payload = Paragraph(inputElement.ChildNodes) }
+                          Payload = Paragraph(inputElement.ChildNodes)
+                          Padding = { BoxPad.Zero with Top = 5; Bottom = 5  }  }
 
         | _ ->
             mkElement { defaults with
