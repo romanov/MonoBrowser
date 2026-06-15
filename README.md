@@ -1,8 +1,17 @@
 # MonoBrowser Core
 Render local and remote markdown files inside your projects and games!
   
-![app1](https://github.com/user-attachments/assets/73d60b78-f2e6-4e70-b791-807830391b67)
+![app1](https://github.com/user-attachments/assets/73d60b78-f2e6-4e70-b791-807830391b67)https://github.com/romanov/MonoBrowser/blob/main/README.md
 
+## ⚠️ Status: Under Development
+
+This project is in active development and **not ready for production use**.
+
+- Breaking changes may happen at any time
+- Features may be incomplete or unstable
+- No guarantees of backward compatibility until a stable release (v1.0)
+
+Feedback and contributions are welcome, but please don't rely on this in a production environment yet.
 
 ## Quick start
 
@@ -87,8 +96,6 @@ Library tested on Windows 11, and Mac OS Sequoia 15.0
 
 ## Roadmap
 1. Multiple windows.
-2. Basic styles.
-3. Smooth scrolling.
 
 ## Licenses
 [ImageSharp](https://github.com/SixLabors/ImageSharp) - allows convert images to PNG and load it to the game
