@@ -113,6 +113,16 @@ type BrowserComponent(game, window:Rectangle) as x =
         Global.CodeBackground <- Color(0x28, 0x2C, 0x34)
         Global.BlockquoteBackground <- Color(0x2D, 0x30, 0x38)
 
+    // ---- Font sizes (px) ----
+    // Glyphs are rasterized once during LoadContent, so set these BEFORE Initialize.
+
+    /// Body text size in px (default 20).
+    member x.FontSize with set (v:float32) = Global.FontSize <- v
+    /// H1 size in px (default 38).
+    member x.Header1Size with set (v:float32) = Global.Header1Size <- v
+    /// H2 size in px (default 26).
+    member x.Header2Size with set (v:float32) = Global.Header2Size <- v
+
     /// Restore the default dark-on-light palette. Set before Navigate.
     member x.UseLightTheme() =
         Global.TextColor <- Color.Black
@@ -122,13 +132,19 @@ type BrowserComponent(game, window:Rectangle) as x =
         Global.CodeBackground <- Color(245, 247, 249)
         Global.BlockquoteBackground <- Color.Beige
 
+    /// Furthest the page can scroll, including the extra bottom padding so the last line
+    /// can clear the bottom edge.
+    member private x.MaxScroll =
+        max 0f (float32 (Global.ContentHeight + Global.WindowPadding.Y + Global.ScrollPaddingBottom - Global.WindowHeight))
+
+    /// Extra scrollable space (px) past the end of the content. Read at scroll time.
+    member x.ScrollPaddingBottom with set (v:int) = Global.ScrollPaddingBottom <- v
+
     /// Programmatically scroll the page. Positive notches scroll down, negative up
     /// (1 notch == one mouse-wheel step). The motion is eased inside Update, so the
     /// component's Update must be running for this to take visible effect.
     member x.Scroll(notches:float32) =
-        let maxScroll =
-            max 0f (float32 (Global.ContentHeight + Global.WindowPadding.Y - Global.WindowHeight))
-        camera.ScrollBy(notches * scrollStep, maxScroll)
+        camera.ScrollBy(notches * scrollStep, x.MaxScroll)
     
     [<CLIEvent>]
     member x.OnReady = 
@@ -181,10 +197,10 @@ type BrowserComponent(game, window:Rectangle) as x =
         _fontSystemBold <- new FontSystem();
         _fontSystemBold.AddFont(File.ReadAllBytes(Path.Combine(folder, "Content", "Fonts", "bold.ttf")))
 
-        // default fonts        
-        Global.Fonts.Add("default", _fontSystem.GetFont(20f))
-        Global.Fonts.Add("header1", _fontSystemBold.GetFont(38f))
-        Global.Fonts.Add("header2", _fontSystemBold.GetFont(26f))
+        // default fonts (glyphs are rasterized at these sizes, so larger == sharper once scaled)
+        Global.Fonts.Add("default", _fontSystem.GetFont(Global.FontSize))
+        Global.Fonts.Add("header1", _fontSystemBold.GetFont(Global.Header1Size))
+        Global.Fonts.Add("header2", _fontSystemBold.GetFont(Global.Header2Size))
         
         // helpers
         borderRect.LoadContent(game.GraphicsDevice)
@@ -310,8 +326,7 @@ type BrowserComponent(game, window:Rectangle) as x =
             // wheel sets a scroll target; the camera eases toward it below
             if isScrollingEnabled && MouseCondition.Scrolled() then
                 let sc = MouseCondition.ScrollDelta
-                let maxScroll =
-                    max 0f (float32 (Global.ContentHeight + Global.WindowPadding.Y - Global.WindowHeight))
+                let maxScroll = x.MaxScroll
 
                 if sc > 0 then camera.ScrollBy(-scrollStep, maxScroll)      // wheel up -> toward top
                 elif sc < 0 then camera.ScrollBy(scrollStep, maxScroll)     // wheel down -> toward bottom
