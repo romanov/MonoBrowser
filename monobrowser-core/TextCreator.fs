@@ -30,10 +30,10 @@ let private CreateTextNode(words:Word seq, gap:int, font:string) =
     for word in words do
     
         let color = match word.TextType with
-                        | TextType.Strong -> Color.Brown
-                        | TextType.Link _ | TextType.ActionLink _ -> Color.Blue
-                        | TextType.Code -> Color.Gray
-                        | _ -> Color.Black
+                        | TextType.Strong -> Global.StrongColor
+                        | TextType.Link _ | TextType.ActionLink _ -> Global.LinkColor
+                        | TextType.Code -> Global.CodeColor
+                        | _ -> Global.TextColor
      
         
     

@@ -27,6 +27,28 @@ let mutable IsDebug = false
 
 let mutable AllowImages = true
 
+// ---- Theme (light defaults) ----
+// Page background painted behind the document. Supports alpha (e.g. transparent or
+// semi-transparent black). Read at draw time, so it can change live.
+let mutable BackgroundColor = Color.White
+// Text colors. Baked into elements at parse time, so set the theme before Navigate.
+let mutable TextColor = Color.Black
+let mutable StrongColor = Color.Brown
+let mutable LinkColor = Color.Blue
+let mutable CodeColor = Color.Gray
+// Backgrounds for code / blockquote blocks. Read at draw time.
+let mutable CodeBackground = Color(245, 247, 249)
+let mutable BlockquoteBackground = Color.Beige
+
+// ---- Font sizes in px. Glyphs are rasterized once on load, so set these BEFORE Initialize. ----
+let mutable FontSize = 20f
+let mutable Header1Size = 38f
+let mutable Header2Size = 26f
+
+// Extra scrollable space (px) past the end of the content, so the last line can be
+// scrolled clear of the bottom edge. Read at scroll time.
+let mutable ScrollPaddingBottom = 0
+
 let mutable ContentHeight = 0
 let mutable MaxRenderWidth = 0
 

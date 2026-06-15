@@ -1,0 +1,7 @@
+monobrowser-example/obj
+monoborwser-example/bin
+monobrowser-core/obj
+monobrowser-core/bin
+
+.DS_Store
+.vscode

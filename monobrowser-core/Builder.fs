@@ -77,18 +77,27 @@ let createChildNodesWithPrepend (nodes: INodeList, maxWidth: int, font: string, 
 
                 let image = item :?> IHtmlImageElement
 
-                ImageLoader.PreloadImage(image.Source, Global.MaxRenderWidth)
+                // try to resolve src from the image element, if it's empty or starts with about: 
+                // then try to get it from the attribute (for markdown images)
+                let src = 
+                    let s = image.Source
+                    if String.IsNullOrEmpty(s) || s.StartsWith("about:") then
+                        image.GetAttribute("src") |> Option.ofObj |> Option.defaultValue ""
+                    else s
+                
+                if src <> "" then
+                    ImageLoader.PreloadImage(src, Global.MaxRenderWidth)
 
-                let size = ImageLoader.GetImageSize(image.Source)
+                    let size = ImageLoader.GetImageSize(src)
 
-                let imageEl =
-                    mkElement { defaults with
-                                  Tag = "IMG"
-                                  Outline = Rectangle(0, 0, size.Width, size.Height)
-                                  Payload = IMG(image.Source)
-                                  Margin = { BoxPad.Zero with Top = 20; Bottom = 20 } }
+                    let imageEl =
+                        mkElement { defaults with
+                                        Tag = "IMG"
+                                        Outline = Rectangle(0, 0, size.Width, size.Height)
+                                        Payload = IMG(src)
+                                        Margin = { BoxPad.Zero with Top = 20; Bottom = 20 } }
 
-                appendBlocks.Add(imageEl)
+                    appendBlocks.Add(imageEl)
 
                 ()
 

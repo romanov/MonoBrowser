@@ -52,6 +52,8 @@ let AddPage(url:string, isHtml:bool) =
                     | path when path.Contains("content://") -> (
                         
                         let path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Content", path.Replace("content://",""))
+                        // added base path to image loader so images in markdown can be loaded from the same directory as the markdown file
+                        ImageLoader.SetBasePath(Path.GetDirectoryName(path))
                         File.ReadAllTextAsync(path).Result
                         
                         )
@@ -71,6 +73,9 @@ let GetFromString(text:string) =
         
 let GetLocalPage(file:string) =
     let path = Path.Combine(file)
+    
+    // added base path to image loader so images in markdown can be loaded from the same directory as the markdown file
+    ImageLoader.SetBasePath(Path.GetDirectoryName(path))
     let file = File.ReadAllTextAsync(path).Result
     convertMarkdownToRender(file, true)
     
