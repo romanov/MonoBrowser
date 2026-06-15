@@ -88,6 +88,47 @@ type BrowserComponent(game, window:Rectangle) as x =
     
     /// Allow images for remote documents. Warning: the app will download and resize images for Texture2D
     member x.DisableImages with set value = Global.AllowImages <- not(value)
+
+    // ---- Theme ----
+    // BackgroundColor / *Background read at draw time (change anytime). Text colors are baked
+    // into the page when it is parsed, so set them BEFORE Navigate to take effect.
+
+    /// Page background painted behind the document. Supports alpha: Color.Transparent for a
+    /// see-through page, or e.g. Color(0,0,0,140) for a semi-transparent black panel.
+    member x.BackgroundColor with set (c:Color) = Global.BackgroundColor <- c
+    member x.TextColor with set (c:Color) = Global.TextColor <- c
+    member x.StrongColor with set (c:Color) = Global.StrongColor <- c
+    member x.LinkColor with set (c:Color) = Global.LinkColor <- c
+    member x.CodeColor with set (c:Color) = Global.CodeColor <- c
+    member x.CodeBackground with set (c:Color) = Global.CodeBackground <- c
+    member x.BlockquoteBackground with set (c:Color) = Global.BlockquoteBackground <- c
+
+    /// Light text palette on a dark page (the page background itself is set separately via
+    /// BackgroundColor). Set before Navigate so text colors are baked correctly.
+    member x.UseDarkTheme() =
+        Global.TextColor <- Color(0xDD, 0xDD, 0xDD)
+        Global.StrongColor <- Color(0xFF, 0xCC, 0x66)
+        Global.LinkColor <- Color(0x66, 0xB3, 0xFF)
+        Global.CodeColor <- Color(0xC8, 0xD3, 0xE0)
+        Global.CodeBackground <- Color(0x28, 0x2C, 0x34)
+        Global.BlockquoteBackground <- Color(0x2D, 0x30, 0x38)
+
+    /// Restore the default dark-on-light palette. Set before Navigate.
+    member x.UseLightTheme() =
+        Global.TextColor <- Color.Black
+        Global.StrongColor <- Color.Brown
+        Global.LinkColor <- Color.Blue
+        Global.CodeColor <- Color.Gray
+        Global.CodeBackground <- Color(245, 247, 249)
+        Global.BlockquoteBackground <- Color.Beige
+
+    /// Programmatically scroll the page. Positive notches scroll down, negative up
+    /// (1 notch == one mouse-wheel step). The motion is eased inside Update, so the
+    /// component's Update must be running for this to take visible effect.
+    member x.Scroll(notches:float32) =
+        let maxScroll =
+            max 0f (float32 (Global.ContentHeight + Global.WindowPadding.Y - Global.WindowHeight))
+        camera.ScrollBy(notches * scrollStep, maxScroll)
     
     [<CLIEvent>]
     member x.OnReady = 
@@ -302,7 +343,7 @@ type BrowserComponent(game, window:Rectangle) as x =
             
             spriteBatch.Begin(SpriteSortMode.Deferred, null, null, null, new RasterizerState(ScissorTestEnable = true))
             
-            filledRect.Draw(spriteBatch, window, Color.White)
+            filledRect.Draw(spriteBatch, window, Global.BackgroundColor)
             
             spriteBatch.End()
             
@@ -353,8 +394,8 @@ type BrowserComponent(game, window:Rectangle) as x =
             let steps = Math.Round((float Global.ContentHeight - float window.Height - float window.Y) / float 40) + 1.0
             let thick = (float window.Height / steps)
             let scroller_y = (float thick) * Math.Round(float camera.Position.Y / float 40)
-            filledRect.Draw(spriteBatch, Rectangle(window.Width + 2, window.Top + 3, 8, window.Height - 5), ColorHelper.FromHex("#f5f5f5"))
-            filledRect.Draw(spriteBatch, Rectangle(window.Width + 2, int scroller_y, 8, int thick), Color.Gray)
+            filledRect.Draw(spriteBatch, Rectangle(window.Right + 2, window.Top + 3, 8, window.Height - 5), ColorHelper.FromHex("#f5f5f5"))
+            filledRect.Draw(spriteBatch, Rectangle(window.Right + 2, window.Top + int scroller_y, 8, int thick), Color.Gray)
          
         
         
@@ -379,13 +420,13 @@ type BrowserComponent(game, window:Rectangle) as x =
                 )
              
               | LinkNode(text, _)  -> (
-                 spriteBatch.DrawString(Global.Fonts["default"], text, element.Outline.Location.ToVector2(), Color.Blue) |> ignore
+                 spriteBatch.DrawString(Global.Fonts["default"], text, element.Outline.Location.ToVector2(), Global.LinkColor) |> ignore
                 )
-             
+
              | BODY when Global.IsDebug -> backRect.Draw(spriteBatch, element.Outline, Color.LightYellow)
              | IMG(url) -> spriteBatch.Draw(ImageLoader.GetImage(url), element.Outline, Color.White)
-             | BLOCKQUOTE _ -> backRect.Draw(spriteBatch, element.Outline, Color.Beige)
-             | CODE _  -> backRect.Draw(spriteBatch, element.Outline, Color(245, 247, 249))
+             | BLOCKQUOTE _ -> backRect.Draw(spriteBatch, element.Outline, Global.BlockquoteBackground)
+             | CODE _  -> backRect.Draw(spriteBatch, element.Outline, Global.CodeBackground)
              | _ -> ()
              
         match (element.Display, Global.IsDebug) with
