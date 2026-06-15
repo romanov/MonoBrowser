@@ -405,12 +405,12 @@ type BrowserComponent(game, window:Rectangle) as x =
     member private x.DrawScrollbar(spriteBatch:SpriteBatch) =
          
          if Global.ContentHeight > 0 then do
-            // TODO scroller pos fix
+            // TODO add scrollbar offset
             let steps = Math.Round((float Global.ContentHeight - float window.Height - float window.Y) / float 40) + 1.0
             let thick = (float window.Height / steps)
             let scroller_y = (float thick) * Math.Round(float camera.Position.Y / float 40)
-            filledRect.Draw(spriteBatch, Rectangle(window.Right - 10, window.Top + 3, 8, window.Height - 5), ColorHelper.FromHex("#f5f5f5"))
-            filledRect.Draw(spriteBatch, Rectangle(window.Right - 10, window.Top + int scroller_y, 8, int thick), Color.Gray)
+            filledRect.Draw(spriteBatch, Rectangle(window.Right - 10, window.Top + 3, Global.ScrollbarWidth, window.Height - 5), Global.ScrollbarColor)
+            filledRect.Draw(spriteBatch, Rectangle(window.Right - 10, window.Top + int scroller_y, Global.ScrollbarWidth, int thick), Global.ScrollbarTrackColor)
          
         
         

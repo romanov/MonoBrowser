@@ -55,6 +55,11 @@ let mutable MaxRenderWidth = 0
 let mutable WindowWidth = 0
 let mutable WindowHeight = 0
 
+// Scrollbar settings
+let mutable ScrollbarWidth = 5
+let mutable ScrollbarColor = ColorHelper.FromHex("#f5f5f5")
+let mutable ScrollbarTrackColor = Color.Gray
+
 let Fonts = Dictionary<string, DynamicSpriteFont>()
 let Page = ConcurrentBag<RenderElement>()
 let DebugData = ConcurrentBag<DebugTreeItem>()
