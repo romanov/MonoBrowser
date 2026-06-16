@@ -17,7 +17,9 @@ open System.Collections.Generic
 open System.Text
 open AngleSharp.Dom
 open AngleSharp.Html.Dom
+open AngleSharp.Html.Parser
 open BasicData
+open ColorCode
 open Microsoft.Xna.Framework
 open Creation
 open RenderElementMethods
@@ -177,6 +179,12 @@ let createChildNodesWithPrepend (nodes: INodeList, maxWidth: int, font: string, 
 let createChildNodes (nodes: INodeList, maxWidth: int, font: string) =
     createChildNodesWithPrepend (nodes, maxWidth, font, ChildMode.Empty)
 
+let pretty (code:string) =
+    let formatter = HtmlFormatter()
+    let formated = formatter.GetHtmlString(code, Languages.CSharp)
+    let options = HtmlParserOptions(IsEmbedded = true)
+    HtmlParser(options).ParseDocument(formated).Body
+   
 
 let rec CreateElement (inputElement: IElement, font: string[]) : RenderElement =
                                 
@@ -255,6 +263,10 @@ let rec CreateElement (inputElement: IElement, font: string[]) : RenderElement =
                           Margin = { BoxPad.Zero with Top = 10; Bottom = 10 } }
 
         | "CODE" ->
+            
+            //let code = pretty (inputElement.OuterHtml)
+            
+            
             mkElement { defaults with
                           Tag = inputElement.NodeName
                           Outline = Rectangle(0, 0, Global.MaxRenderWidth, 0)

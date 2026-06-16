@@ -195,7 +195,9 @@ type BrowserComponent(game, window:Rectangle) as x =
 
         spriteBatch.GraphicsDevice.ScissorRectangle <- window
 
-        browserReadyEvent.Trigger(null, "done")
+        
+        
+        x.SetupDefaultFonts()
 
         base.Initialize()
 
@@ -203,7 +205,7 @@ type BrowserComponent(game, window:Rectangle) as x =
 
     override x.LoadContent() =
 
-        x.SetupDefaultFonts()
+        
         
         //let textureStream = System.Reflection.Assembly.GetEntryAssembly().GetManifestResourceStream("MyProject.Resources.myimage.png");
         //let texture = Texture2D.FromStream(game.GraphicsDevice, textureStream)
@@ -228,6 +230,8 @@ type BrowserComponent(game, window:Rectangle) as x =
         InputHelper.Setup(game)
         
         ImageLoader.Setup(game.GraphicsDevice)
+        
+        browserReadyEvent.Trigger(null, "done")
         
         ()
         
