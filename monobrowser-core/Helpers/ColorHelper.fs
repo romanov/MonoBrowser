@@ -21,3 +21,10 @@ let FromHex (color: string) =
         a <- Int32.Parse(hex.Substring(6, 2), h)
 
     Color(r, g, b, a)
+
+let ParseInlineColor (style: string) : Color option =
+    if String.IsNullOrEmpty(style) then None
+    else
+        let m = System.Text.RegularExpressions.Regex.Match(style, @"color\s*:\s*(#[0-9a-fA-F]{6})")
+        if m.Success then Some(FromHex(m.Groups[1].Value))
+        else None

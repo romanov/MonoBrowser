@@ -33,6 +33,7 @@ let private CreateTextNode(words:Word seq, gap:int, font:string) =
                         | TextType.Strong -> Global.StrongColor
                         | TextType.Link _ | TextType.ActionLink _ -> Global.LinkColor
                         | TextType.Code -> Global.CodeColor
+                        | TextType.ColoredText c -> c
                         | _ -> Global.TextColor
      
         
@@ -159,30 +160,36 @@ let private splitLine(line:string) =
 
 // TODO simplify logic, convert to functional    
 let CreateTextBlock(inputBlocks:TextData[], font:string, maxWidth:int, isCode:bool) =
-    
+
     let elements = ResizeArray<RenderElement>()
-    
-    let data = ResizeArray<TextData>()
-    
-    for item in inputBlocks do
-        
-        // chunks
-        
-        
-        let lines = item.Text.Split([|"\n";|], StringSplitOptions.None)
-        
-        for line in lines do
-                    
-                    if isCode then do
-                        let words = splitLine(line) |> Array.map (fun x -> { Text = x; TextType = item.TextType })
-                        let codeblock = ProccessTextBlock(words, font, maxWidth)
-                        elements.AddRange(codeblock)                
-                    else
-                        let words = splitLine(line) |> Array.map (fun x -> { Text = x; TextType = item.TextType })
-                        data.AddRange(words)
-                     
-    if not(isCode) then
-        let block = ProccessTextBlock(data.ToArray(), font, maxWidth)
-        elements.AddRange(block)      
-    
+
+    if isCode then
+        // A syntax-highlighted line arrives as many items (one per coloured span
+        // plus the plain text between them), so accumulate words across items and
+        // only start a new Line at a real '\n'. Otherwise each span would be laid
+        // out on its own line.
+        let lineWords = ResizeArray<TextData>()
+        let flush () =
+            elements.AddRange(ProccessTextBlock(lineWords.ToArray(), font, maxWidth))
+            lineWords.Clear()
+
+        for item in inputBlocks do
+            item.Text.Split([|"\n"|], StringSplitOptions.None)
+            |> Array.iteri (fun i segment ->
+                if i > 0 then flush()
+                splitLine(segment)
+                |> Array.iter (fun w -> lineWords.Add({ Text = w; TextType = item.TextType })))
+
+        flush()
+    else
+        let data = ResizeArray<TextData>()
+
+        for item in inputBlocks do
+            let lines = item.Text.Split([|"\n";|], StringSplitOptions.None)
+            for line in lines do
+                let words = splitLine(line) |> Array.map (fun x -> { Text = x; TextType = item.TextType })
+                data.AddRange(words)
+
+        elements.AddRange(ProccessTextBlock(data.ToArray(), font, maxWidth))
+
     elements.ToArray()

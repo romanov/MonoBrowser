@@ -15,6 +15,7 @@ module Global
 open System.Collections.Concurrent
 open System.Collections.Generic
 open BasicData
+open ColorCode
 open FontStashSharp
 open Microsoft.Xna.Framework
 
@@ -59,6 +60,9 @@ let mutable WindowHeight = 0
 let mutable ScrollbarWidth = 5
 let mutable ScrollbarColor = ColorHelper.FromHex("#f5f5f5")
 let mutable ScrollbarTrackColor = Color.Gray
+
+// Color code
+let mutable SyntaxHighlight  = "default"
 
 let Fonts = Dictionary<string, DynamicSpriteFont>()
 let Page = ConcurrentBag<RenderElement>()

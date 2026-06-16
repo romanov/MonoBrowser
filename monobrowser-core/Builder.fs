@@ -121,13 +121,11 @@ let createChildNodesWithPrepend (nodes: INodeList, maxWidth: int, font: string, 
             do
                 blocks.Add({ Text = textContent; TextType = TextType.Accent })
 
-        if item.NodeName = "CODE" then
-            do
+        if item.NodeName = "CODE" then do
 
                 let icode =
                     { Text = item.TextContent
                       TextType = TextType.Code }
-
 
                 blocks.Add(icode)
 
@@ -145,14 +143,21 @@ let createChildNodesWithPrepend (nodes: INodeList, maxWidth: int, font: string, 
 
 
 
-        if item.NodeName = "STRONG" then
-            do
-
+        if item.NodeName = "STRONG" then do
                 let i2 =
                     { Text = textContent
                       TextType = TextType.Strong }
 
                 blocks.Add(i2)
+
+        if item.NodeName = "SPAN" then do
+            let el = item :?> IElement
+            let style = el.GetAttribute("style")
+            let textType =
+                match ColorHelper.ParseInlineColor(style) with
+                | Some c -> TextType.ColoredText c
+                | None   -> TextType.Default
+            blocks.Add({ Text = item.TextContent; TextType = textType })
 
     let code =
         match childMode with
@@ -179,11 +184,22 @@ let createChildNodesWithPrepend (nodes: INodeList, maxWidth: int, font: string, 
 let createChildNodes (nodes: INodeList, maxWidth: int, font: string) =
     createChildNodesWithPrepend (nodes, maxWidth, font, ChildMode.Empty)
 
-let pretty (code:string) =
+let private findLanguage (id: string) =
+    match id.ToLowerInvariant() with
+    | "csharp" | "cs" | "c#" -> Some Languages.CSharp
+    | "javascript" | "js"    -> Some Languages.JavaScript
+    | "fsharp"  | "fs" | "f#"-> Some Languages.FSharp
+    | "python"  | "py"       -> Some Languages.Python
+    | "xml" | "html"         -> Some Languages.Xml
+    | "markdown"             -> Some Languages.Markdown
+    | "css"                  -> Some Languages.Css
+    | _                      -> None
+
+let private pretty (code: string, language: ColorCode.ILanguage) =
     let formatter = HtmlFormatter()
-    let formated = formatter.GetHtmlString(code, Languages.CSharp)
+    let formatted = formatter.GetHtmlString(code, language)
     let options = HtmlParserOptions(IsEmbedded = true)
-    HtmlParser(options).ParseDocument(formated).Body
+    HtmlParser(options).ParseDocument(formatted).Body
    
 
 let rec CreateElement (inputElement: IElement, font: string[]) : RenderElement =
@@ -264,14 +280,25 @@ let rec CreateElement (inputElement: IElement, font: string[]) : RenderElement =
 
         | "CODE" ->
             
-            //let code = pretty (inputElement.OuterHtml)
-            
-            
+            let lang = findLanguage Global.SyntaxHighlight
+
+            // ColorCode wraps the highlighted tokens in <div><pre>...spans...</pre></div>,
+            // so reach into the <pre> to hand the spans/text nodes straight to the
+            // child-node builder (it only inspects direct children, it doesn't recurse).
+            let contentNodes =
+                match lang with
+                | Some l ->
+                    let body = pretty(inputElement.TextContent, l)
+                    match body.QuerySelector("pre") with
+                    | null -> body.ChildNodes
+                    | pre  -> pre.ChildNodes
+                | None   -> inputElement.ChildNodes
+
             mkElement { defaults with
                           Tag = inputElement.NodeName
                           Outline = Rectangle(0, 0, Global.MaxRenderWidth, 0)
                           Children = children
-                          Payload = CODE(inputElement.ChildNodes)
+                          Payload = CODE(contentNodes)
                           Padding = { BoxPad.Zero with Top = 30; Left = 25; Bottom = 30 }
                           Margin = { BoxPad.Zero with Top = 10; Bottom = 10 } }
 

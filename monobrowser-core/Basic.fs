@@ -45,6 +45,7 @@ type TextType =
     | Newline
     | Code
     | ActionLink of method:string
+    | ColoredText of color:Color
 
 type TextData = {
     Text:string

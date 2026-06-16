@@ -20,6 +20,7 @@ open System.Threading
 open Apos.Input
 open BasicRectangle
 open Camera
+open ColorCode
 open FontStashSharp
 open Microsoft.Xna.Framework
 open Microsoft.Xna.Framework.Graphics
@@ -89,10 +90,10 @@ type BrowserComponent(game, window:Rectangle) as x =
     member x.AllowWheelScroll with set (value) = isWheelScrollingEnabled <- value
 
     member x.AllowKeyScroll with set (value) = isKeyScrollingEnabled <- value
-    
-         
      
     member x.IsActive with get() = isActive
+    
+    member x.SyntaxHighlight with set (lang:string) = Global.SyntaxHighlight <- lang
     
     /// Allow images for remote documents. Warning: the app will download and resize images for Texture2D
     member x.DisableImages with set value = Global.AllowImages <- not(value)

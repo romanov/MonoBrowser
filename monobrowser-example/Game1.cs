@@ -1,4 +1,5 @@
 ﻿using System;
+using ColorCode;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -28,7 +29,8 @@ public class Game1 : Game
             AllowWheelScroll = true,
             AllowKeyScroll = true,
             DisableImages = true,
-            EnableDebug = true
+            EnableDebug = true,
+            SyntaxHighlight = "c#" // show colors in code blocks
         };
         
         //browser.UseDarkTheme();
@@ -51,13 +53,13 @@ public class Game1 : Game
         browser.OnReady += (_, _) =>
         {
             // load remote document
-            //browser.Navigate("https://raw.githubusercontent.com/romanov/monobrowser/refs/heads/main/README.md");
+            browser.Navigate("https://raw.githubusercontent.com/romanov/monobrowser/refs/heads/main/README.md");
             
             // load local document
             // browser.LoadFile("path to your file");
 
             // load local document from Content folder of your app
-            browser.Navigate("content://test.md");
+            //browser.Navigate("content://test.md");
             
         };
 
