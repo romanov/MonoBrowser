@@ -113,3 +113,5 @@ Library tested on Linux (Elementary OS 8.1)
 [Apos Input](https://github.com/Apostolique/Apos.Input) - events
 
 [Open Sans font](https://github.com/googlefonts/opensans) - default font
+
+[ColorCode](https://github.com/CommunityToolkit/ColorCode-Universal) - Syntax Highlight
