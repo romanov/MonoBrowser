@@ -132,10 +132,14 @@ type BrowserComponent(game, window:Rectangle) as x =
         Global.CodeBackground <- Color(245, 247, 249)
         Global.BlockquoteBackground <- Color.Beige
 
-    /// Furthest the page can scroll, including the extra bottom padding so the last line
-    /// can clear the bottom edge.
+    /// Furthest the page can scroll. `overflow` is how far the content extends past the
+    /// visible area (the window minus the top padding the content is offset by). The extra
+    /// bottom padding only applies when the page actually overflows — adding it
+    /// unconditionally lets a page that already fits scroll into empty space below it.
     member private x.MaxScroll =
-        max 0f (float32 (Global.ContentHeight + Global.WindowPadding.Y + Global.ScrollPaddingBottom - Global.WindowHeight))
+        let overflow = Global.ContentHeight + Global.WindowPadding.Y - Global.WindowHeight
+        if overflow <= 0 then 0f
+        else float32 (overflow + Global.ScrollPaddingBottom)
 
     /// Extra scrollable space (px) past the end of the content. Read at scroll time.
     member x.ScrollPaddingBottom with set (v:int) = Global.ScrollPaddingBottom <- v
@@ -403,14 +407,33 @@ type BrowserComponent(game, window:Rectangle) as x =
         
         
     member private x.DrawScrollbar(spriteBatch:SpriteBatch) =
-         
+
          if Global.ContentHeight > 0 then do
-            // TODO add scrollbar offset
-            let steps = Math.Round((float Global.ContentHeight - float window.Height - float window.Y) / float 40) + 1.0
-            let thick = (float window.Height / steps)
-            let scroller_y = (float thick) * Math.Round(float camera.Position.Y / float 40)
-            filledRect.Draw(spriteBatch, Rectangle(window.Right - 10, window.Top + 3, Global.ScrollbarWidth, window.Height - 5), Global.ScrollbarColor)
-            filledRect.Draw(spriteBatch, Rectangle(window.Right - 10, window.Top + int scroller_y, Global.ScrollbarWidth, int thick), Global.ScrollbarTrackColor)
+            let maxScroll = x.MaxScroll
+
+            // Track spans the window with a small inset top and bottom.
+            let trackTop = window.Top + 3
+            let trackHeight = window.Height - 6
+
+            // Thumb height is proportional to how much of the scrollable extent is on screen;
+            // `extent` is the full distance the view travels (one window) plus the scroll range.
+            let visible = float32 Global.WindowHeight
+            let extent = visible + maxScroll
+            let thumbHeight =
+                if extent <= 0f then trackHeight
+                else max 24 (int (float32 trackHeight * visible / extent))
+
+            // Map scroll [0, maxScroll] -> thumb top [trackTop, trackBottom - thumbHeight],
+            // clamped so the thumb always stays inside the track (it used to run off the
+            // bottom and get clipped away by the scissor, so it vanished when scrolled down).
+            let travel = trackHeight - thumbHeight
+            let scrollY = MathHelper.Clamp(camera.Position.Y, 0f, maxScroll)
+            let thumbY =
+                if maxScroll <= 0f then trackTop
+                else trackTop + int (float32 travel * (scrollY / maxScroll))
+
+            filledRect.Draw(spriteBatch, Rectangle(window.Right - 10, trackTop, Global.ScrollbarWidth, trackHeight), Global.ScrollbarColor)
+            filledRect.Draw(spriteBatch, Rectangle(window.Right - 10, thumbY, Global.ScrollbarWidth, thumbHeight), Global.ScrollbarTrackColor)
          
         
         
