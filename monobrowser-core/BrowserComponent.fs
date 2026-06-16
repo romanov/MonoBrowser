@@ -36,6 +36,9 @@ type BrowserComponent(game, window:Rectangle) as x =
     let mutable camera: Camera2D = Unchecked.defaultof<Camera2D>
     let debug = AnyCondition(KeyboardCondition(Keys.OemTilde))
     let refreshBtn = AnyCondition(KeyboardCondition(Keys.F5))
+    
+    let pgUpBtn = AnyCondition(KeyboardCondition(Keys.PageUp))
+    let pgDownBtn = AnyCondition(KeyboardCondition(Keys.PageDown))
 
     // EVENTS
     
@@ -60,7 +63,9 @@ type BrowserComponent(game, window:Rectangle) as x =
     let mutable isScrollbarVisible = false
     let mutable isDebugAllowed = false
     let mutable isActive = false
-    let mutable isScrollingEnabled = true
+    let mutable isWheelScrollingEnabled = true
+    let mutable isKeyScrollingEnabled = true
+    
     let mutable isNavbarEnabled = false
     
     let mutable navbarText = "https://google.com"
@@ -81,8 +86,11 @@ type BrowserComponent(game, window:Rectangle) as x =
     member x.EnableDebug with set (value) = isDebugAllowed <- value
     
     /// enable scrolling
-    member x.AllowScroll with set (value) = isScrollingEnabled <- value
-     
+    member x.AllowWheelScroll with set (value) = isWheelScrollingEnabled <- value
+
+    member x.AllowKeyScroll with set (value) = isKeyScrollingEnabled <- value
+    
+         
      
     member x.IsActive with get() = isActive
     
@@ -338,13 +346,20 @@ type BrowserComponent(game, window:Rectangle) as x =
                 pendingScrollReset <- false
 
             // wheel sets a scroll target; the camera eases toward it below
-            if isScrollingEnabled && MouseCondition.Scrolled() then
+            if isWheelScrollingEnabled && MouseCondition.Scrolled() then
                 let sc = MouseCondition.ScrollDelta
-                let maxScroll = x.MaxScroll
+                if sc > 0 then camera.ScrollBy(-scrollStep, x.MaxScroll)      // wheel up -> toward top
+                elif sc < 0 then camera.ScrollBy(scrollStep, x.MaxScroll)     // wheel down -> toward bottom
 
-                if sc > 0 then camera.ScrollBy(-scrollStep, maxScroll)      // wheel up -> toward top
-                elif sc < 0 then camera.ScrollBy(scrollStep, maxScroll)     // wheel down -> toward bottom
-
+            let btnScrollDelta = match isKeyScrollingEnabled with
+                                            | true when pgDownBtn.Held() -> -1
+                                            | true when pgUpBtn.Held() -> 1
+                                            | _ -> 0
+            
+            if isKeyScrollingEnabled then    
+                if btnScrollDelta > 0 then camera.ScrollBy(-scrollStep, x.MaxScroll)
+                elif btnScrollDelta < 0 then camera.ScrollBy(scrollStep, x.MaxScroll)
+            
             // smoothly approach the scroll target every frame
             camera.UpdateScroll(float32 gameTime.ElapsedGameTime.TotalSeconds)
 

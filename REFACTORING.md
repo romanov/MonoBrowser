@@ -1,117 +1,86 @@
-# MonoBrowser — Refactoring Analysis
+# MonoBrowser — Refactoring Plan
 
-A render engine for MonoGame that parses Markdown/HTML (via Markdig + AngleSharp) into a tree of `RenderElement` and draws it with FontStashSharp. The core pipeline is:
+A render engine for MonoGame that parses Markdown/HTML (Markdig + AngleSharp) into a tree of `RenderElement` and draws it with FontStashSharp. Pipeline:
 
 ```
 CreateElement → AddMarginNodes → AddTextNodes → AddSize → RefreshPosition → Draw
 ```
 
-The design (immutable tree, successive rewrite passes) is sound. The problems are concentrated in global mutable state, massive record duplication, dead code, and a few real bugs. Items are ordered by impact.
+The immutable-tree / successive-rewrite-pass design is sound. Since the previous analysis, the four critical bugs (font setup, inactive `Update`, OL counter, F5/cache) are **fixed**, `mkElement` + stable integer `Id` are **implemented**, and a live theme/font-size config lives in `Global.fs`. What remains is dead code, IO/concurrency hygiene, the global-state architecture, and naming. Ordered by impact-to-risk.
 
 ---
 
-## 1. Critical bugs
+## 1. Dead code (delete — low risk, shrinks surface before deeper work)
 
-### 1.1 `SetupDefaultFonts` logic is inverted (`BrowserComponent.fs:141`)
-```fsharp
-if not (NetworkInterface.GetIsNetworkAvailable()) then
-    raise (Exception("Please, create 'Content/Fonts' folder and put files..."))
-...
-if not (Directory.Exists(path)) then
-    Directory.CreateDirectory(path) |> ignore   // creates EMPTY dir, downloads nothing
-else
-    // download fonts only if the folder ALREADY exists
-```
-Two inversions: the exception fires on *no network* but its message is about *missing font files*; and fonts are only downloaded when the folder already exists, so on a clean first run the folder is created empty and `LoadContent` then throws on `File.ReadAllBytes(".../regular.ttf")`. The download branch should run when files are missing, regardless of folder existence.
+All confirmed unreferenced (only self-references or commented call sites):
 
-### 1.2 `Update` does not early-return when inactive (`BrowserComponent.fs:228`)
-```fsharp
-if not(isActive) then do ()   // no-op; execution continues
-```
-Input handling, scrolling, and mouse math all run even when the component is inactive. Should be `if not isActive then () else (...)` or a guard clause.
+| Item | Location |
+|---|---|
+| Entire `HtmlData` module (`PositionMode`, `ColorString`, second `DisplayMode`, `Style`, `Word`) | `HtmlData.fs` + `<Compile>` line 34 of the fsproj |
+| `Settings`, `Styles`, `SimpleNode` types | `Basic.fs:19,71,86` |
+| `showTree` + `top` | `Builder.fs:27,31-55` |
+| `imagesList` + commented `IMG` branch | `Builder.fs:29,208-225` |
+| `LastAnon1`, `WrapBlock`, `CreateLine`, `LocationWithOffset` | `RenderElementMethods.fs:50,53,66,84` |
+| `ZoomCamera`, `DeprojectScreenPosition`, `ProjectScreenPosition` | `Camera.fs:66,69,72` |
+| `CalculatePercentage` (also misplaced — not color logic) | `Helpers/ColorHelper.fs:7` |
+| Stray `printfn` on every layout (`max page height is …`) | `Builder.fs:397` |
+| Stray `printfn` on every non-link click | `BrowserComponent.fs:425` |
 
-### 1.3 Ordered-list counter is a shared module global (`Builder.fs:57`)
-`let mutable lastItem = 0` is mutated by `createChildNodesWithPrepend` and reset in the `OL` branch of `AddTextNodes`. Two `<ol>`s on a page, or two pages loading on the loader thread, corrupt each other's numbering. Same risk for `let mutable top` (used by `showTree`). List numbering state should be threaded through the recursion, not held in a module variable.
-
-### 1.4 F5 refresh and page cache never invalidate (`BrowserComponent.fs:236`, `Book.fs:26`)
-```fsharp
-if refreshBtn.Pressed() && isDebugAllowed then ()   // does nothing
-```
-The `pages` cache is keyed by base64(url) and never evicted, so even a working refresh would return stale content.
+Note: `Basic.fs` `Settings` was previously floated as the home for a theme config, but that config already exists as mutables in `Global.fs` — so `Settings` is genuinely dead, not "to be wired up." Delete it.
 
 ---
 
-## 2. Global mutable state
+## 2. IO & concurrency
 
-`Global.fs` holds the entire engine state as module-level mutables and shared collections (`Window`, `MaxRenderWidth`, `ContentHeight`, `WindowWidth/Height`, `Fonts`, `Page`, `DebugData`). Every pass reads and writes these directly.
+### 2.1 `HttpClient` created per call (socket exhaustion)
+`use client = new HttpClient()` appears in three places: `Book.fs:61`, `BrowserComponent.SetupDefaultFonts` (`BrowserComponent.fs:241`), `ImageLoader.downloadImage` (`ImageLoader.fs:21`). Replace with a single shared `static` `HttpClient` (or `IHttpClientFactory`).
 
-Consequences: you cannot run two `BrowserComponent` instances (they share `Global.Page`), layout is not unit-testable without spinning up graphics, and `AddSize` mutates `Global.ContentHeight` as a side effect mid-traversal. `RefreshPosition` also mutates `element.Outline` in place while every other pass is purely functional — inconsistent and surprising.
+### 2.2 Sync-over-async everywhere
+`.Result` / `.Wait()` on `GetStringAsync`, `GetStreamAsync`, `GetByteArrayAsync`, `WriteAllBytesAsync`, `CopyToAsync`, `ReadAllTextAsync` (Book, ImageLoader, BrowserComponent). Page loading already runs on a dedicated `Thread`, so the blocking is contained — but make the chain genuinely `async`/`task` or document the deliberate block. Don't leave it ambiguous.
 
-Recommendation: introduce a `RenderContext` record (window, padding, max width, fonts, debug flag) passed explicitly into the pipeline, and have each pass *return* its result (content height, positioned tree) rather than writing globals. This is the single highest-leverage change for testability and multi-instance support.
-
----
-
-## 3. Massive duplication in `CreateElement` (`Builder.fs:185`)
-
-The tag `match` repeats a near-identical `RenderElement` record literal ~12 times, differing only in `Payload`, `Margin`, and `Padding`. It ends with `{ element with Children = children }`, which re-assigns the same `children` already set in every branch — redundant.
-
-Extract a smart constructor:
-```fsharp
-let private mkElement tag payload display padding margin children =
-    { Tag = tag; Outline = Rectangle(0,0,Global.MaxRenderWidth,0)
-      Children = children; Payload = payload; Display = display
-      Padding = padding; Margin = margin; IsClickable = false }
-```
-Then each branch is one line. This also removes the scattered `RandomHelp.CreateString(5)` tag suffixes — random strings are being used as element identity, which is fragile: `PrevBlockPosition` finds an element via structural equality (`Array.findIndex (fun x -> x = element)`), an O(n) comparison that breaks on duplicate records. Give elements a real `Id` (incrementing int / GUID) instead of random tags.
-
-The same duplication pattern recurs in the synthetic-node builders (`AddMarginNodes`, `AddPadding`, `WrapBlock`, `CreateLine`) — all hand-roll the full record. Route them through `mkElement` too.
+### 2.3 Network IO inside the layout pass
+`createChildNodesWithPrepend` (`Builder.fs:89`) calls `ImageLoader.PreloadImage`, which downloads and re-encodes a PNG to disk — *during tree building*. Layout should run on already-resolved image dimensions. Split a `resolveImages` phase before `AddTextNodes`/`AddSize`, and have layout read cached sizes only.
 
 ---
 
-## 4. Dead code (safe to delete)
+## 3. Global mutable state (largest architectural item — do after 1–2)
 
-Confirmed unreferenced across the codebase:
+`Global.fs` holds the whole engine state as module-level mutables and shared collections: `Window`, `MaxRenderWidth`, `ContentHeight`, `WindowWidth/Height`, `WindowPadding`, theme colors, font sizes, `Fonts`, `Page` (`ConcurrentBag`), `DebugData`.
 
-- **`HtmlData.fs`** — the entire module (`PositionMode`, a second `DisplayMode`, `ColorString`, `Style`) is never used. Note it defines a *second* `DisplayMode` that collides conceptually with the active one in `BasicData` (`Anon | Inline | Block`). Delete the file and its `<Compile>` entry.
-- **`Basic.fs`** — `Settings`, `Styles`, `SimpleNode` types are unused.
-- **`Builder.fs`** — `imagesList` (only referenced in commented code), `showTree`/`top` (only called recursively + a commented call site), the commented `IMG` branch.
-- **`RenderElementMethods.fs`** — `LastAnon1` is never called; large trailing blank region.
-- **`RandomHelp.fs`** — `CreateNewsFileName`, `CreateNumber` unused.
-- **`Camera.fs`** — `DeprojectScreenPosition`, `ProjectScreenPosition`, `ZoomCamera` unused; commented `ViewMatrix`.
-- Stray `printfn` debug calls in hot paths: `AddSize` prints page height on every layout (`Builder.fs:462`); `DrawElement` prints on every non-link click.
+Consequences:
+- **No two `BrowserComponent` instances** — they share `Global.Page`/`Global.ContentHeight`. (The README roadmap explicitly wants "multiple windows.")
+- **`AddSize` writes `Global.ContentHeight`** as a side effect mid-traversal (`Builder.fs:396`) — every other pass is pure.
+- **`RefreshPosition` mutates `element.Outline` in place** (`Builder.fs:433`; `Outline` is the one `mutable` field on `RenderElement`) while the rest of the pipeline returns new trees. Inconsistent and surprising.
+- **Not unit-testable** without a live `GraphicsDevice`.
 
----
-
-## 5. IO and concurrency
-
-### 5.1 `HttpClient` created per-call with `use`
-`Book.AddPage`, `ImageLoader.downloadImage`, and `SetupDefaultFonts` each `use client = new HttpClient()`. This is the classic socket-exhaustion antipattern. Use a single shared static `HttpClient` (or `IHttpClientFactory`).
-
-### 5.2 Sync-over-async everywhere
-`.Result` / `.Wait()` on `GetStringAsync`, `GetByteArrayAsync`, `WriteAllBytesAsync`, `CopyToAsync`. Risks thread-pool starvation/deadlock. Since loading already runs on a dedicated `Thread`, either make the path genuinely async or keep blocking but at minimum stop blocking on the UI-adjacent paths.
-
-### 5.3 Network IO during layout
-`createChildNodesWithPrepend` (`Builder.fs:81`) calls `ImageLoader.PreloadImage` — which downloads and re-encodes a PNG to disk — *inside the tree-building pass*. Layout should operate on already-resolved image dimensions; move image fetching to a distinct resolve phase before layout.
+Recommendation: introduce a `RenderContext` record (window, padding, max width, fonts, theme, debug flag) threaded explicitly into each pass; have passes **return** results (content height, positioned tree) instead of writing globals. Make `Outline` non-mutable and have `RefreshPosition` return a new tree. This unblocks multi-window and testing. Largest change — sequence it last, after the cleanup makes the surface smaller.
 
 ---
 
-## 6. Naming, config, consistency
+## 4. Identity & payload cleanup
 
-- **Typos in identifiers**: `proccess`, `chunck`, `ProccessTextBlock`, `newchilds`. Rename.
-- **Inconsistent casing**: public `CreateElement`/`CreateTextBlock` vs `createChildNodes`/`createLine`. Pick one convention for module-level functions.
-- **Magic numbers**: paddings (30/25), margins (20/10), scroll step (40), font sizes (20/38/26), `WindowPadding (10,20)`, scrollbar widths are inlined throughout `Builder.fs` and `BrowserComponent.fs`. The unused `Settings` type in `Basic.fs` is the natural home — wire up a single theme/config record and read from it.
-- **Misplaced helper**: `ColorHelper.CalculatePercentage` has nothing to do with color; move to a layout/math helper.
-- **Non-exhaustive position logic**: `RefreshPosition` (`Builder.fs:472`) silently sends `Inline,None` / `Anon,None` to `Point.Zero`; make the intent explicit.
+Elements now carry a stable `Id` (`RenderElementMethods.mkElement`), and `PrevBlockPosition` correctly compares by `Id` (`RenderElementMethods.fs:72`). Two leftovers:
+
+- `UL(RandomHelp.CreateString(10))` (`Builder.fs:271`) — the guid payload is never read now that `Id` exists. Change `UL of guid:string` → a fieldless `UL` and drop the random string. Then audit whether `RandomHelp.CreateString` (and the `Nanoid` package ref) is still needed anywhere.
+- `DrawScrollbar` (`BrowserComponent.fs:409-411`) hard-codes `40` (the scroll step) and `10` (the right-edge inset) as literals instead of reading `scrollStep` / a named inset constant. Wire to the existing fields so scroll math stays consistent.
+
+---
+
+## 5. Naming & consistency
+
+- **Typos in identifiers**: `proccess`, `chunck` (`Builder.fs:161-173`), `newchilds` (`Builder.fs:504-508`), `ProccessTextBlock` (`TextCreator.fs:134,178,185`). Rename.
+- **Inconsistent module-function casing**: public `CreateElement` / `CreateTextBlock` vs `createChildNodes` / `createChildNodesWithPrepend`. Pick one convention.
+- **Non-exhaustive position logic**: `RefreshPosition` (`Builder.fs:427`) routes `Inline,None` / `Anon,None` to `Point.Zero` via a catch-all — make the intent explicit or assert it can't happen.
+- **Remaining magic numbers**: block paddings `30/25` (`Builder.fs:254,263`), header margins `20/10`, paragraph `5`. Lower priority than the theme work already done, but fold into the `RenderContext` theme in §3 when you get there.
 
 ---
 
 ## Suggested order of work
 
-1. Fix the four bugs in §1 (small, high value, low risk).
-2. Delete dead code in §4 (shrinks surface area before deeper changes).
-3. Extract `mkElement` and give elements real IDs (§3).
-4. Share `HttpClient`, separate image-resolve from layout (§5).
-5. Introduce `RenderContext` to retire `Global` mutables (§2) — largest change, do last.
-6. Sweep naming/config/magic numbers (§6).
+1. **Delete dead code (§1)** — mechanical, independently shippable, shrinks everything else.
+2. **Share `HttpClient` + separate image resolve from layout (§2)** — correctness/perf, contained changes.
+3. **Identity/payload + scrollbar constants (§4)** — small, removes the last `RandomHelp` dependency.
+4. **Naming sweep (§5)** — cheap once the dead code is gone.
+5. **`RenderContext` to retire `Global` mutables + make `Outline` immutable (§3)** — the architectural change; benefits from all the above landing first, and unblocks the multi-window roadmap item.
 
-Steps 1–4 are mostly mechanical and independently shippable. Step 5 is the architectural one and benefits from the cleanup before it.
+Steps 1–4 are low-risk and shippable in any order. Step 5 is the one worth a design pass.

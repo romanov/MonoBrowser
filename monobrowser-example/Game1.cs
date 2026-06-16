@@ -25,12 +25,13 @@ public class Game1 : Game
         var browser = new BrowserComponent(this, browserWindow)
         {
             EnableScrollbar = true, // shows the scrollbar
-            AllowScroll = true,
+            AllowWheelScroll = true,
+            AllowKeyScroll = true,
             DisableImages = true,
             EnableDebug = true
         };
         
-        // browser.UseDarkTheme();
+        //browser.UseDarkTheme();
 
         browser.OnContentLoaded += (_, _) =>
         {
