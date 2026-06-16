@@ -275,17 +275,20 @@ type BrowserComponent(game, window:Rectangle) as x =
 
         //Builder.showTree (None) (page1) (0)
 
+        // Resync content height after loading a new page so scroll can be clamped correctly.
+        Global.ContentHeight <- data.Outline.Height
+
         lastPayload <- Some payload
         pendingScrollReset <- true
         isActive <- true
-        
+
         let info = match payload with
                     | FromRemote url -> "Link"
                     | FromLocal localFile -> "Local file"
                     | FromString text -> "Content"
-        
+
         pageLoadedEvent.Trigger(null, info)
-        
+
         ()
 
     /// Close window and stop listening to events
