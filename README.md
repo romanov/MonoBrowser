@@ -18,16 +18,19 @@ Feedback and contributions are welcome, but please don't rely on this in a produ
 Install via [Nuget](https://www.nuget.org/packages/MonoBrowser/): `dotnet add package MonoBrowser`
 
 1. Add component to your game or project
+Please, check the monobrowser-example for the latest options
 
 ```
 var browserWindow = new Rectangle(10, 10, _graphics.PreferredBackBufferWidth - 20, _graphics.PreferredBackBufferHeight - 20);
 
 var browser = new BrowserComponent(this, browserWindow)
 {
+    EnableScrollbar = true, // shows the scrollbar
+    AllowWheelScroll = true,
+    AllowKeyScroll = true,
+    DisableImages = true,
     EnableDebug = true,
-    EnableScrollbar = true,
-    AllowScroll = true,
-    DisableImages = false
+    SyntaxHighlight = "c#" // show colors in code blocks
 };
 
 browser.OnLinkClicked += (_, url) =>
@@ -91,7 +94,8 @@ browser.FromString("""
 
 ## Support
 Works in your C# or F# MonoGame projects.
-Library tested on Windows 11, and Mac OS Sequoia 15.0
+Library tested on Windows 11, and macOS 26 Tahoe
+Library tested on Linux (Elementary OS 8.1)
 
 
 ## Roadmap
