@@ -1,7 +1,7 @@
 # MonoBrowser Core
 Render local and remote markdown files inside your projects and games!
-  
-![app1](https://github.com/user-attachments/assets/73d60b78-f2e6-4e70-b791-807830391b67)https://github.com/romanov/MonoBrowser/blob/main/README.md
+
+<img width="817" height="539" alt="mb" src="https://github.com/user-attachments/assets/0a742640-84f7-4c13-bdf5-136e035a325c" />
 
 ## ⚠️ Status: Under Development
 
