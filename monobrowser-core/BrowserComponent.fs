@@ -112,6 +112,10 @@ type BrowserComponent(game, window:Rectangle) as x =
         Global.CodeColor <- Color(0xC8, 0xD3, 0xE0)
         Global.CodeBackground <- Color(0x28, 0x2C, 0x34)
         Global.BlockquoteBackground <- Color(0x2D, 0x30, 0x38)
+        Global.BackgroundColor <- Color(0x1B, 0x1F, 0x28)
+        Global.ScrollbarTrackColor <- Color(0x6A, 0x71, 0x80)
+        Global.ScrollbarColor <- Color(0x2D, 0x30, 0x38)
+
 
     // ---- Font sizes (px) ----
     // Glyphs are rasterized once during LoadContent, so set these BEFORE Initialize.
@@ -131,6 +135,9 @@ type BrowserComponent(game, window:Rectangle) as x =
         Global.CodeColor <- Color.Gray
         Global.CodeBackground <- Color(245, 247, 249)
         Global.BlockquoteBackground <- Color.Beige
+        Global.BackgroundColor <- Color.White
+        Global.ScrollbarTrackColor <- Color(0xE0, 0xE0, 0xE0)
+        Global.ScrollbarColor <- Color(0xA0, 0xA0, 0xA0)
 
     /// Furthest the page can scroll. `overflow` is how far the content extends past the
     /// visible area (the window minus the top padding the content is offset by). The extra
