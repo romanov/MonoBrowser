@@ -42,9 +42,9 @@ let mutable CodeBackground = Color(245, 247, 249)
 let mutable BlockquoteBackground = Color.Beige
 
 // ---- Font sizes in px. Glyphs are rasterized once on load, so set these BEFORE Initialize. ----
-let mutable FontSize = 20f
-let mutable Header1Size = 38f
-let mutable Header2Size = 26f
+let mutable FontSize = 14f
+let mutable Header1Size = 24f
+let mutable Header2Size = 18f
 
 // Extra scrollable space (px) past the end of the content, so the last line can be
 // scrolled clear of the bottom edge. Read at scroll time.

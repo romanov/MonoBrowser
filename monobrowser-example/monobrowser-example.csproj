@@ -27,6 +27,12 @@
         <PreserveCompilationReferences>true</PreserveCompilationReferences>
         <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
     </PropertyGroup>
+    <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+      <PlatformTarget>ARM64</PlatformTarget>
+    </PropertyGroup>
+    <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+      <PlatformTarget>x64</PlatformTarget>
+    </PropertyGroup>
     <ItemGroup>
         <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.4.1"/>
         <PackageReference Include="MonoGame.Content.Builder.Task" Version="3.8.4.1"/>

@@ -22,6 +22,7 @@ open BasicRectangle
 open Camera
 open ColorCode
 open FontStashSharp
+open FontStashSharp.Rasterizers.FreeType
 open Microsoft.Xna.Framework
 open Microsoft.Xna.Framework.Graphics
 open Microsoft.Xna.Framework.Input
@@ -31,6 +32,10 @@ open RenderElementMethods
 type BrowserComponent(game, window:Rectangle) as x =
     inherit DrawableGameComponent(game)
 
+    
+    do FontSystemDefaults.FontLoader <- FreeTypeLoader()
+    do FontSystemDefaults.UseKernings <- true
+        
     let mutable _fontSystem = Unchecked.defaultof<FontSystem>
     let mutable _fontSystemBold = Unchecked.defaultof<FontSystem>
 
@@ -212,6 +217,9 @@ type BrowserComponent(game, window:Rectangle) as x =
         //let texture = Texture2D.FromStream(game.GraphicsDevice, textureStream)
         
         let folder = AppDomain.CurrentDomain.BaseDirectory
+        
+        
+     
         
         _fontSystem <- new FontSystem();
         _fontSystem.AddFont(File.ReadAllBytes(Path.Combine(folder, "Content", "Fonts", "regular.ttf")))
